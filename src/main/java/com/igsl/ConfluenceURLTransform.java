@@ -132,8 +132,8 @@ public class ConfluenceURLTransform {
 				LOGGER.info("Ignored URL list will be written to: " + ignoreList);
 				postMigratePrinter.printRecord("SPACEKEY", "TITLE");
 				urlPrinter.printRecord("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO");
-				ignorePrinter.printRecord("SPACEKEY", "TITLE", "URL");
-				errorPrinter.printRecord("SPACEKEY", "TITLE", "URL");
+				ignorePrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL");
+				errorPrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER");
 				if (config.getConfluenceConnectionString() != null) {
 					confluenceConn = DriverManager.getConnection(
 							config.getConfluenceConnectionString(),
@@ -159,8 +159,7 @@ public class ConfluenceURLTransform {
 								.getDeclaredConstructor(Config.class).newInstance(config);
 						handlers.add(h);
 					} catch (Exception ex) {
-						LOGGER.error("Unable to create handler " + handlerName);
-						ex.printStackTrace();
+						LOGGER.error("Unable to create handler " + handlerName, ex);
 					}
 				}
 				try (PreparedStatement query = confluenceConn.prepareStatement(QUERY)) {
@@ -186,13 +185,16 @@ public class ConfluenceURLTransform {
 								boolean accepted = false;
 								for (Handler handler : handlers) {
 									if (handler.accept(uri)) {
-										accepted = true;
-										if (handler.needPostMigrate()) {
-											postMigrate = true;
-											urlPostMigrateCount++;
-										}
 										HandlerResult hr = handler.handle(uri, urlText);
-										if (hr.isReplaceTag()) {
+										switch (hr.getResultType()) {
+										case ERROR:
+											urlError++;
+											errorPrinter.printRecord(spaceKey, title, id, urlString, hr.getErrorMessage(), handler.getClass());
+											break;
+										case TAG: 
+											accepted = true;
+											changed = true;
+											urlUpdatedCount++;
 											LOGGER.debug(
 													handler.getClass() + ": " + 
 													"ID: [" + id + "] " + 
@@ -204,7 +206,11 @@ public class ConfluenceURLTransform {
 													handler.needPostMigrate(), spaceKey, title, id, 
 													handler.getClass(),
 													tag, hr.getTag());
-										} else {
+											break;
+										case URI: 
+											accepted = true;
+											changed = true;
+											urlUpdatedCount++;
 											LOGGER.debug(
 													handler.getClass() + ": " + 
 													"ID: [" + id + "] " + 
@@ -219,22 +225,25 @@ public class ConfluenceURLTransform {
 													handler.needPostMigrate(), spaceKey, title, id, 
 													handler.getClass(),
 													urlString, hr.getUri().toString());
+											break;
 										}
-										changed = true;
-										urlUpdatedCount++;
+										if (accepted && handler.needPostMigrate()) {
+											postMigrate = true;
+											urlPostMigrateCount++;
+										}
 										break;	// Stop after a handler accepts the URL
 									}
 								}
 								if (!accepted) {
 									urlIgnoredCount++;
-									ignorePrinter.printRecord(spaceKey, title, urlString);
+									ignorePrinter.printRecord(spaceKey, title, id, urlString);
 									LOGGER.debug("Unaccepted URL: " + urlString);
 								}
 							} catch (Exception ex) {
 								LOGGER.debug("Ignoring invalid URI: " + urlString);
+								LOGGER.error("Error", ex);
 								urlError++;
-								errorPrinter.printRecord(spaceKey, title, urlString);
-								matcher.appendReplacement(sb, "$0");
+								errorPrinter.printRecord(spaceKey, title, id, urlString, ex.getMessage(), "N/A");
 							}
 						}	// While matcher.find
 						matcher.appendTail(sb);
@@ -262,7 +271,7 @@ public class ConfluenceURLTransform {
 									}
 								} catch (Exception ex) {
 									ex.printStackTrace();
-									LOGGER.debug("ID: " + id + " Update failed, rolling back");
+									LOGGER.error("ID: " + id + " Update failed, rolling back");
 									confluenceConn.rollback();
 								}
 							}
@@ -294,6 +303,8 @@ public class ConfluenceURLTransform {
 						}	// If changed
 					}	// ResultSet loop
 				}	// Try PreparedStatement
+			} catch (Exception ex) {
+				LOGGER.error("Error", ex);
 			} finally {
 				closeConnection(jiraConn);
 				closeConnection(confluenceConn);

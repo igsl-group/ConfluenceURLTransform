@@ -3,16 +3,22 @@ package com.igsl.handler;
 import java.net.URI;
 
 public class HandlerResult {
+	private HandlerResultType resultType;	
 	private URI uri;
 	private String tag;
-	private boolean replaceTag;
+	private String errorMessage;
+	public HandlerResult(URI uri, String errorMessage) {
+		this.uri = uri;
+		this.errorMessage = errorMessage;
+		this.resultType = HandlerResultType.ERROR;
+	}
 	public HandlerResult(URI uri) {
 		this.uri = uri;
-		replaceTag = false;
+		this.resultType = HandlerResultType.URI;
 	}
 	public HandlerResult(String tag) {
 		this.tag = tag;
-		replaceTag = true;
+		this.resultType = HandlerResultType.TAG;
 	}
 	public URI getUri() {
 		return uri;
@@ -20,7 +26,10 @@ public class HandlerResult {
 	public String getTag() {
 		return tag;
 	}
-	public boolean isReplaceTag() {
-		return replaceTag;
+	public HandlerResultType getResultType() {
+		return resultType;
+	}
+	public String getErrorMessage() {
+		return errorMessage;
 	}
 }

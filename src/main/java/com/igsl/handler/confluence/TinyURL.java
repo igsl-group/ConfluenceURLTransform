@@ -1,6 +1,7 @@
 package com.igsl.handler.confluence;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.regex.Matcher;
@@ -37,6 +38,7 @@ public class TinyURL extends Confluence {
 		Matcher m = PATH_REGEX.matcher(uri.getPath());
 		if (m.matches()) {
 			String tinyURL = m.group(1);
+			tinyURL = URLDecoder.decode(tinyURL, ENCODING).trim();
 			int pageId = TinyURLGenerator.unpack(tinyURL);
 			// Resolve page ID into space key and page title
 			try (PreparedStatement ps = config.getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
@@ -57,6 +59,8 @@ public class TinyURL extends Confluence {
 						return new HandlerResult(builder.build());
 					}
 				}
+			} catch (Exception ex) {
+				return new HandlerResult(uri, ex.getMessage());
 			}
 		}
 		return new HandlerResult(uri);

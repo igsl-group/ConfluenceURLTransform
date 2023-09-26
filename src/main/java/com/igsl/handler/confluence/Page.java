@@ -15,6 +15,9 @@ import org.apache.logging.log4j.Logger;
 import com.igsl.Config;
 import com.igsl.handler.HandlerResult;
 
+// https://wiki.pccwglobal.com/pages/listneworupdatedpages.action
+// Cannot invoke "java.lang.CharSequence.length()" because "this.text" is null
+
 public class Page extends Confluence {
 	
 	private static final Logger LOGGER = LogManager.getLogger(Page.class);
@@ -34,7 +37,11 @@ public class Page extends Confluence {
 		if (!super._accept(uri)) {
 			return false;
 		}
-		return PATH_REGEX.matcher(uri.getPath()).matches();
+		String query = uri.getQuery();
+		if (query == null || query.isBlank()) {
+			return false;
+		}
+		return PATH_REGEX.matcher(uri.getPath()).matches() && PAGEID_REGEX.matcher(query).find();
 	}
 
 	@Override

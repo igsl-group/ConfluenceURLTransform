@@ -18,7 +18,7 @@ public class Download extends Confluence {
 	// /download/attachments/<id> or /download/thumbnails/<id>
 	private static final Pattern PATH_REGEX = Pattern.compile("/download/(?:attachments|thumbnails)/([0-9]+)/(.+)");
 	// Optional version parameter
-	private static final Pattern VERSION_REGEX = Pattern.compile("version=([0-9]+)");
+	//private static final Pattern VERSION_REGEX = Pattern.compile("version=([0-9]+)");
 
 	public Download(Config config) {
 		super(config);
@@ -37,11 +37,9 @@ public class Download extends Confluence {
 		LOGGER.debug("Path: " + uri.getPath());
 		LOGGER.debug("Query: " + uri.getQuery());
 		Matcher pathMatcher = PATH_REGEX.matcher(uri.getPath());
-		Matcher versionMatcher = VERSION_REGEX.matcher(uri.getQuery());
-		if (pathMatcher.matches() && versionMatcher.find()) {
+		if (pathMatcher.matches()) {
 			String pageId = pathMatcher.group(1);
 			String fileName = pathMatcher.group(2);
-			String version = versionMatcher.group(1);
 			// Find page title
 			try (PreparedStatement ps = config.getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
 				ps.setString(1, pageId);
@@ -65,8 +63,12 @@ public class Download extends Confluence {
 						sb.append("<ac:plain-text-link-body><![CDATA[").append(text).append("]]></ac:plain-text-link-body>");
 						sb.append("</ac:link>");
 						return new HandlerResult(sb.toString());
+					} else {
+						return new HandlerResult(uri, "Referenced page cannot be found");
 					}
 				}
+			} catch (Exception ex) {
+				return new HandlerResult(uri, ex.getMessage());
 			}
 		}
 		return new HandlerResult(uri);

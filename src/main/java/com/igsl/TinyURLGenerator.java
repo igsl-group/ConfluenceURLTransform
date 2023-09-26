@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -27,13 +28,14 @@ public class TinyURLGenerator {
 	private static final String[] MATCHES = {
 		"=",
 		"/",
-		"+"
+		"+",
 	};
 	private static final String[] REPLACEMENTS = {
 		"",
 		"-",
 		"_"
 	};
+	private static final Pattern BASE64 = Pattern.compile("^([_\\-a-zA-Z0-9+/=]+)(?:[^a-zA-Z0-9+/=].*)?$"); 
 	
 	private static void reverse(byte[] array) {
 		if (array == null) {
@@ -67,27 +69,34 @@ public class TinyURLGenerator {
 	}
 
 	public static int unpack(String tinyURL) throws IOException {
+		String src = tinyURL;
 		for (int i = 1; i < REPLACEMENTS.length; i++) {	// Skip empty string
-			tinyURL = tinyURL.replaceAll(Pattern.quote(REPLACEMENTS[i]), MATCHES[i]);
+			src = src.replaceAll(Pattern.quote(REPLACEMENTS[i]), MATCHES[i]);
 		}
-		int mod = tinyURL.length() % 8;
-		if (mod != 0) {
-			// Add back trailing A's
-			for (int i = 0; i < 8 - mod; i++) {
-				tinyURL += "A";
+		Matcher m = BASE64.matcher(src);
+		if (m.matches()) {
+			src = m.group(1);
+			int mod = src.length() % 8;
+			if (mod != 0) {
+				// Add back trailing A's
+				for (int i = 0; i < 8 - mod; i++) {
+					src += "A";
+				}
 			}
+			byte[] bytes = src.getBytes(ENCODING);
+			byte[] decoded = Base64.getDecoder().decode(bytes);
+			ByteBuffer buf = ByteBuffer.wrap(decoded);
+			buf.order(ByteOrder.LITTLE_ENDIAN);
+			// Read as integer
+			int i = buf.getInt();
+			return i;
+		} else {
+			throw new IOException("\"" + tinyURL + "\" is not valid base 64 data");
 		}
-		byte[] bytes = tinyURL.getBytes(ENCODING);
-		byte[] decoded = Base64.getDecoder().decode(bytes);
-		ByteBuffer buf = ByteBuffer.wrap(decoded);
-		buf.order(ByteOrder.LITTLE_ENDIAN);
-		// Read as integer
-		int i = buf.getInt();
-		return i;
 	}
 	
 //	public static void main(String[] args) throws Exception {
-//		System.out.println(pack(98383));
-//		System.out.println(unpack("T4AB"));
+//		System.out.println(pack(164897067));
+//		System.out.println(unpack("KyHUCQ."));
 //	}
 }
