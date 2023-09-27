@@ -246,7 +246,6 @@ public class ConfluenceURLTransform {
 								}
 							} catch (Exception ex) {
 								LOGGER.debug("Ignoring invalid URI: " + urlString);
-								LOGGER.error("URL Parse Error", ex);
 								urlError++;
 								errorPrinter.printRecord(spaceKey, title, id, urlString, ex.getMessage(), handlerName);
 							}

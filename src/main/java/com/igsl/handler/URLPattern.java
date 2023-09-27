@@ -44,22 +44,22 @@ public class URLPattern {
 	public boolean match(URI uri) {
 		String path = uri.getPath();
 		String query = uri.getQuery();
-		LOGGER.info("URLPattern checking: [" + path + "] [" + query + "] against [" + pathPattern.pattern() + "]");
+		LOGGER.debug("URLPattern checking: [" + path + "] [" + query + "] against [" + pathPattern.pattern() + "]");
 		if (!pathPattern.matcher(path).matches()) {
-			LOGGER.info("URLPattern = false");
+			LOGGER.debug("URLPattern = false");
 			return false;
 		}
 		boolean queryMatched = (queryPatterns.size() == 0);
 		if (queryPatterns.size() != 0 && query != null) {
 			for (Pattern p : queryPatterns) {
-				LOGGER.info("URLPattern against query: [" + p.pattern() + "]");
+				LOGGER.debug("URLPattern against query: [" + p.pattern() + "]");
 				if (p.matcher(query).find()) {
 					queryMatched = true;
 					break;
 				}
 			}
 		}
-		LOGGER.info("URLPattern = " + queryMatched);
+		LOGGER.debug("URLPattern = " + queryMatched);
 		return queryMatched;
 	}
 
