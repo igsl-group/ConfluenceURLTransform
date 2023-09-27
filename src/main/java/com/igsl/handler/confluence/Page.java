@@ -12,7 +12,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.Config;
+import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
 
 // https://wiki.pccwglobal.com/pages/listneworupdatedpages.action
@@ -57,7 +57,7 @@ public class Page extends Confluence {
 		Map<String, String> queries = parseQuery(query);
 		if (pageIdString != null) {
 			int pageId = Integer.parseInt(pageIdString);
-			try (PreparedStatement ps = config.getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
+			try (PreparedStatement ps = config.getConnections().getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
 				ps.setInt(1, pageId);
 				try (ResultSet rs = ps.executeQuery()) {
 					if (rs.next()) {
@@ -68,15 +68,15 @@ public class Page extends Confluence {
 			}
 		}
 		URIBuilder builder = new URIBuilder();
-		builder.setScheme(config.getToScheme());
-		builder.setHost(config.getConfluenceToHost());
+		builder.setScheme(config.getUrlTransform().getToScheme());
+		builder.setHost(config.getUrlTransform().getConfluenceToHost());
 		String newPath = uri.getPath();
 		// Remove original base path
-		if (newPath.startsWith(config.getConfluenceFromBasePath())) {
-			newPath = newPath.substring(config.getConfluenceFromBasePath().length());
+		if (newPath.startsWith(config.getUrlTransform().getConfluenceFromBasePath())) {
+			newPath = newPath.substring(config.getUrlTransform().getConfluenceFromBasePath().length());
 		}
 		builder.setPathSegments(addPathSegments(
-				config.getConfluenceToBasePath(),
+				config.getUrlTransform().getConfluenceToBasePath(),
 				newPath));
 		builder.setFragment(uri.getFragment());
 		// Add back query parameters, except pageId and preview

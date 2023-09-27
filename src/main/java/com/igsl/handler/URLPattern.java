@@ -5,10 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class URLPattern {
+	private static final Logger LOGGER = LogManager.getLogger(URLPattern.class);
 	private Pattern pathPattern;
+	/**
+	 * URI must contain at least one of these to be accepted
+	 */
 	private List<Pattern> queryPatterns = new ArrayList<>();
-	private List<Pattern> optionalQueryPatterns = new ArrayList<>();
 
 	public URLPattern() {
 	}
@@ -17,8 +23,13 @@ public class URLPattern {
 		this.pathPattern = Pattern.compile(pathRegex);
 	}
 
+	public URLPattern setPathRegex(String pathRegex) {
+		this.pathPattern = Pattern.compile(pathRegex);
+		return this;
+	}
+	
 	public URLPattern setPath(String path) {
-		this.pathPattern = Pattern.compile(Pattern.quote(path));
+		this.pathPattern = Pattern.compile(Pattern.quote(path) + "/?");
 		return this;
 	}
 
@@ -30,26 +41,26 @@ public class URLPattern {
 		return this;
 	}
 
-	public URLPattern setOptionalQuery(String... parameterNames) {
-		this.optionalQueryPatterns.clear();
-		for (String s : parameterNames) {
-			this.optionalQueryPatterns.add(Pattern.compile(Pattern.quote(s) + "=[^&#]+"));
-		}
-		return this;
-	}
-
 	public boolean match(URI uri) {
 		String path = uri.getPath();
 		String query = uri.getQuery();
+		LOGGER.info("URLPattern checking: [" + path + "] [" + query + "] against [" + pathPattern.pattern() + "]");
 		if (!pathPattern.matcher(path).matches()) {
+			LOGGER.info("URLPattern = false");
 			return false;
 		}
-		for (Pattern p : queryPatterns) {
-			if (!p.matcher(query).matches()) {
-				return false;
+		boolean queryMatched = (queryPatterns.size() == 0);
+		if (queryPatterns.size() != 0 && query != null) {
+			for (Pattern p : queryPatterns) {
+				LOGGER.info("URLPattern against query: [" + p.pattern() + "]");
+				if (p.matcher(query).find()) {
+					queryMatched = true;
+					break;
+				}
 			}
 		}
-		return true;
+		LOGGER.info("URLPattern = " + queryMatched);
+		return queryMatched;
 	}
 
 	public Pattern getPathPattern() {
@@ -58,9 +69,5 @@ public class URLPattern {
 
 	public List<Pattern> getQueryPatterns() {
 		return queryPatterns;
-	}
-
-	public List<Pattern> getOptionalQueryPatterns() {
-		return optionalQueryPatterns;
 	}
 }

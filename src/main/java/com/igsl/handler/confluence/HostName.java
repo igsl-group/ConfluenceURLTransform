@@ -4,7 +4,7 @@ import java.net.URI;
 
 import org.apache.http.client.utils.URIBuilder;
 
-import com.igsl.Config;
+import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
 
 public class HostName extends Confluence {
@@ -21,13 +21,13 @@ public class HostName extends Confluence {
 	@Override
 	public HandlerResult handle(URI uri, String text) throws Exception {
 		URIBuilder builder = new URIBuilder();
-		builder.setScheme(config.getToScheme());
-		builder.setHost(config.getConfluenceToHost());
+		builder.setScheme(config.getUrlTransform().getToScheme());
+		builder.setHost(config.getUrlTransform().getConfluenceToHost());
 		String originalPath = uri.getPath();
 		builder.setPathSegments(addPathSegments(
-				config.getConfluenceToBasePath(),
-				(originalPath.startsWith(config.getConfluenceFromBasePath())? 
-						originalPath.substring(config.getConfluenceFromBasePath().length()) : 
+				config.getUrlTransform().getConfluenceToBasePath(),
+				(originalPath.startsWith(config.getUrlTransform().getConfluenceFromBasePath())? 
+						originalPath.substring(config.getUrlTransform().getConfluenceFromBasePath().length()) : 
 						originalPath)
 				));
 		builder.setCustomQuery(uri.getQuery());

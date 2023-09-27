@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.Config;
+import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
 
 public class Download extends Confluence {
@@ -34,14 +34,12 @@ public class Download extends Confluence {
 
 	@Override
 	public HandlerResult handle(URI uri, String text) throws Exception {
-		LOGGER.debug("Path: " + uri.getPath());
-		LOGGER.debug("Query: " + uri.getQuery());
 		Matcher pathMatcher = PATH_REGEX.matcher(uri.getPath());
 		if (pathMatcher.matches()) {
 			String pageId = pathMatcher.group(1);
 			String fileName = pathMatcher.group(2);
 			// Find page title
-			try (PreparedStatement ps = config.getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
+			try (PreparedStatement ps = config.getConnections().getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
 				ps.setString(1, pageId);
 				try (ResultSet rs = ps.executeQuery()) {
 					if (rs.next()) {

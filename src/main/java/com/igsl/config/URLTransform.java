@@ -1,31 +1,21 @@
-package com.igsl;
+package com.igsl.config;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-public class Config {
-	private static final String NEWLINE = System.getProperty("line.separator");	
-	@JsonIgnore
-	private Connection jiraConnection;
-	@JsonIgnore
-	private Connection confluenceConnection;
+public class URLTransform implements ConfigInterface {
+	// Output directory for CSV files
 	private String outputDirectory;
+	// Pages requiring post migration
 	private String postMigrateListBaseName;
+	// URLs updated
 	private String urlListBaseName;
+	// URLs not updated due to errors
 	private String urlErrorBaseName;
+	// URLs not updated
 	private String urlIgnoredBaseName;
 	// Switch to enable/disable update of BODYCONTENT table
 	private boolean performUpdate;
-	// Database connection information
-	private String confluenceConnectionString;
-	private String confluenceUser;
-	private String confluencePassword;
-	private String jiraConnectionString;
-	private String jiraUser;
-	private String jiraPassword;
 	// Default scheme if the URL has none
 	private String defaultScheme;
 	// Accepted schemes regular expression
@@ -50,7 +40,8 @@ public class Config {
 	private String jiraToBasePath;
 	// List of class name of Handler implementations, they will be checked in sequence
 	private List<String> handlers;
-	public void validate() throws Exception {
+	@Override
+	public List<String> validate() {
 		List<String> messages = new ArrayList<>();
 		if (postMigrateListBaseName == null) {
 			messages.add("postMigrateListBaseName is not specified. Please provide a file name.");
@@ -63,12 +54,6 @@ public class Config {
 		}
 		if (urlErrorBaseName == null) {
 			messages.add("urlErrorBaseName is not specified. Please provide a file name.");
-		}
-		if (confluenceConnectionString == null) {
-			messages.add("confluenceConnectionString is not specified. Please provide JDBC connection string to Confluence.");
-		}
-		if (jiraConnectionString == null) {
-			messages.add("jiraConnectionString is not specified. Please provide JDBC connection string to Jira.");
 		}
 		if (defaultScheme == null || defaultScheme.isBlank()) {
 			messages.add("defaultScheme is empty. Please provide a default URL scheme, e.g. \"https\"");
@@ -104,58 +89,21 @@ public class Config {
 			messages.add("jiraToBasePath is not specified. Please provide Jira Cloud base path, e.g. \"/jira\"");
 		}
 		if (handlers.isEmpty()) {
-			messages.add("No handlers are defined.");
+			messages.add("No URLTransform handlers are defined.");
 		}
-		if (!messages.isEmpty()) {
-			StringBuilder sb = new StringBuilder();
-			for (String msg : messages) {
-				sb.append(msg).append(NEWLINE);
-			}
-			throw new Exception(sb.toString());
-		}
+		return messages;
 	}
-	// Generated
 	public boolean isPerformUpdate() {
 		return performUpdate;
 	}
 	public void setPerformUpdate(boolean performUpdate) {
 		this.performUpdate = performUpdate;
 	}
-	public String getConfluenceConnectionString() {
-		return confluenceConnectionString;
+	public String getDefaultScheme() {
+		return defaultScheme;
 	}
-	public void setConfluenceConnectionString(String confluenceConnectionString) {
-		this.confluenceConnectionString = confluenceConnectionString;
-	}
-	public String getConfluenceUser() {
-		return confluenceUser;
-	}
-	public void setConfluenceUser(String confluenceUser) {
-		this.confluenceUser = confluenceUser;
-	}
-	public String getConfluencePassword() {
-		return confluencePassword;
-	}
-	public void setConfluencePassword(String confluencePassword) {
-		this.confluencePassword = confluencePassword;
-	}
-	public String getJiraConnectionString() {
-		return jiraConnectionString;
-	}
-	public void setJiraConnectionString(String jiraConnectionString) {
-		this.jiraConnectionString = jiraConnectionString;
-	}
-	public String getJiraUser() {
-		return jiraUser;
-	}
-	public void setJiraUser(String jiraUser) {
-		this.jiraUser = jiraUser;
-	}
-	public String getJiraPassword() {
-		return jiraPassword;
-	}
-	public void setJiraPassword(String jiraPassword) {
-		this.jiraPassword = jiraPassword;
+	public void setDefaultScheme(String defaultScheme) {
+		this.defaultScheme = defaultScheme;
 	}
 	public String getFromSchemeRegex() {
 		return fromSchemeRegex;
@@ -223,23 +171,11 @@ public class Config {
 	public void setHandlers(List<String> handlers) {
 		this.handlers = handlers;
 	}
-	public Connection getJiraConnection() {
-		return jiraConnection;
+	public String getOutputDirectory() {
+		return outputDirectory;
 	}
-	public void setJiraConnection(Connection jiraConnection) {
-		this.jiraConnection = jiraConnection;
-	}
-	public Connection getConfluenceConnection() {
-		return confluenceConnection;
-	}
-	public void setConfluenceConnection(Connection confluenceConnection) {
-		this.confluenceConnection = confluenceConnection;
-	}
-	public String getDefaultScheme() {
-		return defaultScheme;
-	}
-	public void setDefaultScheme(String defaultScheme) {
-		this.defaultScheme = defaultScheme;
+	public void setOutputDirectory(String outputDirectory) {
+		this.outputDirectory = outputDirectory;
 	}
 	public String getPostMigrateListBaseName() {
 		return postMigrateListBaseName;
@@ -253,22 +189,16 @@ public class Config {
 	public void setUrlListBaseName(String urlListBaseName) {
 		this.urlListBaseName = urlListBaseName;
 	}
-	public String getOutputDirectory() {
-		return outputDirectory;
+	public String getUrlErrorBaseName() {
+		return urlErrorBaseName;
 	}
-	public void setOutputDirectory(String outputDirectory) {
-		this.outputDirectory = outputDirectory;
+	public void setUrlErrorBaseName(String urlErrorBaseName) {
+		this.urlErrorBaseName = urlErrorBaseName;
 	}
 	public String getUrlIgnoredBaseName() {
 		return urlIgnoredBaseName;
 	}
 	public void setUrlIgnoredBaseName(String urlIgnoredBaseName) {
 		this.urlIgnoredBaseName = urlIgnoredBaseName;
-	}
-	public String getUrlErrorBaseName() {
-		return urlErrorBaseName;
-	}
-	public void setUrlErrorBaseName(String urlErrorBaseName) {
-		this.urlErrorBaseName = urlErrorBaseName;
 	}
 }

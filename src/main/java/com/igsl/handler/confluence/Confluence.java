@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.Config;
+import com.igsl.config.Config;
 import com.igsl.handler.Handler;
 
 public abstract class Confluence extends Handler {
@@ -15,8 +15,8 @@ public abstract class Confluence extends Handler {
 	
 	public Confluence(Config config) {
 		super(config);
-		if (config.getConfluenceFromHost() != null) {
-			hostRegex = Pattern.compile(Pattern.quote(config.getConfluenceFromHost()));
+		if (config.getUrlTransform().getConfluenceFromHost() != null) {
+			hostRegex = Pattern.compile(Pattern.quote(config.getUrlTransform().getConfluenceFromHost()));
 		}
 	}
 

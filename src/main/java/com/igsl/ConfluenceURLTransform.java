@@ -3,6 +3,7 @@ package com.igsl;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.igsl.config.Config;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
 
@@ -76,51 +78,51 @@ public class ConfluenceURLTransform {
 				config = or.readValue(in);
 			}
 			config.validate();
-			if (config.isPerformUpdate()) {
+			if (config.getUrlTransform().isPerformUpdate()) {
 				LOGGER.info("performUpdate is true, database will be updated");
 			} else {
 				LOGGER.info("performUpdate is false, database will not be updated");
 			}
 			// Get password
-			if (config.getConfluencePassword() == null) {
-				Console.println("For Confluence database at: %1s\n", config.getConfluenceConnectionString());
-				if (config.getConfluenceUser() == null) {
-					config.setConfluenceUser(Console.readLine("Confluence User: "));
+			if (config.getConnections().getConfluencePassword() == null) {
+				Console.println("For Confluence database at: %1s\n", config.getConnections().getConfluenceConnectionString());
+				if (config.getConnections().getConfluenceUser() == null) {
+					config.getConnections().setConfluenceUser(Console.readLine("Confluence User: "));
 				}else {
-					Console.println("Confluence User: %1s", config.getConfluenceUser());
+					Console.println("Confluence User: %1s", config.getConnections().getConfluenceUser());
 				}
-				config.setConfluencePassword(new String(Console.readPassword("Confluence Password: ")));
+				config.getConnections().setConfluencePassword(new String(Console.readPassword("Confluence Password: ")));
 			}
-			if (config.getJiraPassword() == null) {
-				Console.println("For Jira database at: %1s\n", config.getJiraConnectionString());
-				if (config.getJiraUser() == null) {
-					config.setJiraUser(Console.readLine("Jira User: "));
+			if (config.getConnections().getJiraPassword() == null) {
+				Console.println("For Jira database at: %1s\n", config.getConnections().getJiraConnectionString());
+				if (config.getConnections().getJiraUser() == null) {
+					config.getConnections().setJiraUser(Console.readLine("Jira User: "));
 				} else {
-					Console.println("Jira User: %1s", config.getJiraUser());
+					Console.println("Jira User: %1s", config.getConnections().getJiraUser());
 				}
-				config.setJiraPassword(new String(Console.readPassword("Jira Password: ")));
+				config.getConnections().setJiraPassword(new String(Console.readPassword("Jira Password: ")));
 			}
 			Connection confluenceConn = null;
 			Connection jiraConn = null;
 			String outputPrefix = System.getProperty("user.dir") + PATH_DELIM;
-			if (config.getOutputDirectory() != null) {
-				Path p = Paths.get(config.getOutputDirectory());
+			if (config.getUrlTransform().getOutputDirectory() != null) {
+				Path p = Paths.get(config.getUrlTransform().getOutputDirectory());
 				if (!Files.exists(p)) {
-					Files.createDirectories(p);
+					p = Files.createDirectories(p);
 					outputPrefix = p.toAbsolutePath().toString() + PATH_DELIM;
 				} else {
 					if (Files.isDirectory(p)) {
 						outputPrefix = p.toAbsolutePath().toString() + PATH_DELIM;
 					} else {
-						LOGGER.error("Output directory \"" + config.getOutputDirectory() + "\" is not a directory, output file will be written to current directory");
+						LOGGER.error("Output directory \"" + config.getUrlTransform().getOutputDirectory() + "\" is not a directory, output file will be written to current directory");
 					}
 				}
 			}
 			String outputSuffix = "." + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".csv";
-			String postMigrateList = outputPrefix + config.getPostMigrateListBaseName() + outputSuffix;
-			String urlList = outputPrefix + config.getUrlListBaseName() + outputSuffix;
-			String ignoreList = outputPrefix + config.getUrlIgnoredBaseName() + outputSuffix;
-			String errorList = outputPrefix + config.getUrlErrorBaseName() + outputSuffix;
+			String postMigrateList = outputPrefix + config.getUrlTransform().getPostMigrateListBaseName() + outputSuffix;
+			String urlList = outputPrefix + config.getUrlTransform().getUrlListBaseName() + outputSuffix;
+			String ignoreList = outputPrefix + config.getUrlTransform().getUrlIgnoredBaseName() + outputSuffix;
+			String errorList = outputPrefix + config.getUrlTransform().getUrlErrorBaseName() + outputSuffix;
 			try (
 					CSVPrinter postMigratePrinter = new CSVPrinter(new FileWriter(postMigrateList), CSVFormat.DEFAULT);
 					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSVFormat.DEFAULT);
@@ -130,30 +132,30 @@ public class ConfluenceURLTransform {
 				LOGGER.info("Post migrate list will be written to: " + postMigrateList);
 				LOGGER.info("URL list will be written to: " + urlList);
 				LOGGER.info("Ignored URL list will be written to: " + ignoreList);
-				postMigratePrinter.printRecord("SPACEKEY", "TITLE");
+				postMigratePrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID");
 				urlPrinter.printRecord("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO");
 				ignorePrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL");
 				errorPrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER");
-				if (config.getConfluenceConnectionString() != null) {
+				if (config.getConnections().getConfluenceConnectionString() != null) {
 					confluenceConn = DriverManager.getConnection(
-							config.getConfluenceConnectionString(),
-							config.getConfluenceUser(),
-							config.getConfluencePassword());
+							config.getConnections().getConfluenceConnectionString(),
+							config.getConnections().getConfluenceUser(),
+							config.getConnections().getConfluencePassword());
 					confluenceConn.setAutoCommit(false);
 				}
-				if (config.getJiraConnectionString() != null) {
+				if (config.getConnections().getJiraConnectionString() != null) {
 					jiraConn = DriverManager.getConnection(
-						config.getJiraConnectionString(),
-						config.getJiraUser(),
-						config.getJiraPassword());
+						config.getConnections().getJiraConnectionString(),
+						config.getConnections().getJiraUser(),
+						config.getConnections().getJiraPassword());
 					jiraConn.setAutoCommit(false);
 				}
 				// Store in config
-				config.setConfluenceConnection(confluenceConn);
-				config.setJiraConnection(jiraConn);
+				config.getConnections().setConfluenceConnection(confluenceConn);
+				config.getConnections().setJiraConnection(jiraConn);
 				// Create handlers
 				List<Handler> handlers = new ArrayList<>();
-				for (String handlerName : config.getHandlers()) {
+				for (String handlerName : config.getUrlTransform().getHandlers()) {
 					try {
 						Handler h = (Handler) Class.forName(handlerName)
 								.getDeclaredConstructor(Config.class).newInstance(config);
@@ -180,16 +182,19 @@ public class ConfluenceURLTransform {
 							String tag = matcher.group(0);
 							String urlString = matcher.group(GROUP_HREF);
 							String urlText = matcher.group(GROUP_TEXT);
+							String handlerName = "N/A";
 							try {
-								URI uri = new URI(urlString);
+								String urlDecoded = URLDecoder.decode(urlString, Handler.ENCODING);
+								URI uri = new URI(urlDecoded);
 								boolean accepted = false;
 								for (Handler handler : handlers) {
 									if (handler.accept(uri)) {
+										handlerName = handler.getClass().getCanonicalName();
 										HandlerResult hr = handler.handle(uri, urlText);
 										switch (hr.getResultType()) {
 										case ERROR:
 											urlError++;
-											errorPrinter.printRecord(spaceKey, title, id, urlString, hr.getErrorMessage(), handler.getClass());
+											errorPrinter.printRecord(spaceKey, title, id, urlString, hr.getErrorMessage(), handlerName);
 											break;
 										case TAG: 
 											accepted = true;
@@ -223,7 +228,7 @@ public class ConfluenceURLTransform {
 													"$" + GROUP_AFTER_HREF);
 											urlPrinter.printRecord(
 													handler.needPostMigrate(), spaceKey, title, id, 
-													handler.getClass(),
+													handlerName,
 													urlString, hr.getUri().toString());
 											break;
 										}
@@ -241,14 +246,14 @@ public class ConfluenceURLTransform {
 								}
 							} catch (Exception ex) {
 								LOGGER.debug("Ignoring invalid URI: " + urlString);
-								LOGGER.error("Error", ex);
+								LOGGER.error("URL Parse Error", ex);
 								urlError++;
-								errorPrinter.printRecord(spaceKey, title, id, urlString, ex.getMessage(), "N/A");
+								errorPrinter.printRecord(spaceKey, title, id, urlString, ex.getMessage(), handlerName);
 							}
 						}	// While matcher.find
 						matcher.appendTail(sb);
 						if (postMigrate) {
-							postMigratePrinter.printRecord(spaceKey, title);
+							postMigratePrinter.printRecord(spaceKey, title, id);
 							pagePostMigrateCount++;
 						}
 						if (changed) {
@@ -257,7 +262,7 @@ public class ConfluenceURLTransform {
 									"ID: " + id + " " + 
 									"Source: [" + body + "] " + 
 									"Result: [" + sb.toString() + "]");
-							if (config.isPerformUpdate()) {
+							if (config.getUrlTransform().isPerformUpdate()) {
 								try (PreparedStatement update = confluenceConn.prepareStatement(UPDATE)) {
 									update.setString(1, sb.toString());
 									update.setString(2, id);

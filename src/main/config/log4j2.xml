@@ -20,9 +20,10 @@
         </Root>
         <Logger name="com.igsl" level="debug" additivity="false">
             <AppenderRef ref="RollingFile" />
-            <!-- 
-            AppenderRef ref="Console" />
-            -->
+        </Logger>
+        <Logger name="com.igsl.ConfluenceURLTransform" level="info" additivity="false">
+            <AppenderRef ref="RollingFile" />
+            <AppenderRef ref="Console" />
         </Logger>
     </Loggers>
 </Configuration>

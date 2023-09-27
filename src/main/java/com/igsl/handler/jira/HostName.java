@@ -4,7 +4,7 @@ import java.net.URI;
 
 import org.apache.http.client.utils.URIBuilder;
 
-import com.igsl.Config;
+import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
 
 public class HostName extends Jira {
@@ -21,13 +21,13 @@ public class HostName extends Jira {
 	@Override
 	public HandlerResult handle(URI uri, String text) throws Exception {
 		URIBuilder builder = new URIBuilder();
-		builder.setScheme(config.getToScheme());
-		builder.setHost(config.getJiraToHost());
+		builder.setScheme(config.getUrlTransform().getToScheme());
+		builder.setHost(config.getUrlTransform().getJiraToHost());
 		String originalPath = uri.getPath();
 		builder.setPathSegments(addPathSegments(
-				config.getJiraToBasePath(),
-				(originalPath.startsWith(config.getJiraFromBasePath())? 
-						originalPath.substring(config.getJiraFromBasePath().length()) : 
+				config.getUrlTransform().getJiraToBasePath(),
+				(originalPath.startsWith(config.getUrlTransform().getJiraFromBasePath())? 
+						originalPath.substring(config.getUrlTransform().getJiraFromBasePath().length()) : 
 						originalPath)
 				));
 		builder.setCustomQuery(uri.getQuery());

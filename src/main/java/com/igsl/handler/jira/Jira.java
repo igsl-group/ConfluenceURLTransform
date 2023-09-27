@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.Config;
+import com.igsl.config.Config;
 import com.igsl.handler.Handler;
 
 public abstract class Jira extends Handler {
@@ -15,8 +15,8 @@ public abstract class Jira extends Handler {
 	
 	public Jira(Config config) {
 		super(config);
-		if (config.getJiraFromHost() != null) {
-			hostRegex = Pattern.compile(Pattern.quote(config.getJiraFromHost()));
+		if (config.getUrlTransform().getJiraFromHost() != null) {
+			hostRegex = Pattern.compile(Pattern.quote(config.getUrlTransform().getJiraFromHost()));
 		}
 	}
 

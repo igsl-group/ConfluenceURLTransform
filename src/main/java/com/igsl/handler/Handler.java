@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.Config;
+import com.igsl.config.Config;
 
 public abstract class Handler {
 
@@ -30,7 +30,7 @@ public abstract class Handler {
 			"WHERE a.CONTENTTYPE = 'ATTACHMENT' AND a.CONTENTID = ?";
 	
 	protected static final String PATH_DELIM = "/";
-	protected static final String ENCODING = "ASCII";
+	public static final String ENCODING = "ASCII";
 
 	protected Config config;
 	private Pattern schemeRegex;
@@ -41,8 +41,8 @@ public abstract class Handler {
 	 */
 	public Handler(Config config) {
 		this.config = config;
-		if (config.getFromSchemeRegex() != null) {
-			this.schemeRegex = Pattern.compile(config.getFromSchemeRegex());
+		if (config.getUrlTransform().getFromSchemeRegex() != null) {
+			this.schemeRegex = Pattern.compile(config.getUrlTransform().getFromSchemeRegex());
 		}
 	}
 
@@ -125,7 +125,7 @@ public abstract class Handler {
 		if (schemeRegex != null) {
 			String scheme = uri.getScheme();
 			if (scheme == null) {
-				scheme = config.getDefaultScheme();
+				scheme = config.getUrlTransform().getDefaultScheme();
 			}
 			if (!schemeRegex.matcher(scheme).matches()) {
 				return false;
