@@ -5,7 +5,7 @@ CCMA converts URLs inserted using Search/Recently Viewed/Files. Those links are 
 However CCMA does not convert URLs inserted using Web Link or Advanced. Those links are absolute links.
 
 ## Configuration
-Configuration is stored in Config.json. See com.igsl.Config for explanation of each property.
+Configuration is stored in Config.json. See com.igsl.config.Config for explanation of each property.
 
 ## How to Run
 1. TODO

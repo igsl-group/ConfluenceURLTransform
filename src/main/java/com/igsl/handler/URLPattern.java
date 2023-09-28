@@ -1,5 +1,6 @@
 package com.igsl.handler;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,22 +45,25 @@ public class URLPattern {
 	public boolean match(URI uri) {
 		String path = uri.getPath();
 		String query = uri.getQuery();
-		LOGGER.debug("URLPattern checking: [" + path + "] [" + query + "] against [" + pathPattern.pattern() + "]");
+		if (query != null) {
+			try {
+				query = Handler.decode(uri.getQuery());
+			} catch (UnsupportedEncodingException e) {
+				return false;
+			}
+		}
 		if (!pathPattern.matcher(path).matches()) {
-			LOGGER.debug("URLPattern = false");
 			return false;
 		}
 		boolean queryMatched = (queryPatterns.size() == 0);
 		if (queryPatterns.size() != 0 && query != null) {
 			for (Pattern p : queryPatterns) {
-				LOGGER.debug("URLPattern against query: [" + p.pattern() + "]");
 				if (p.matcher(query).find()) {
 					queryMatched = true;
 					break;
 				}
 			}
 		}
-		LOGGER.debug("URLPattern = " + queryMatched);
 		return queryMatched;
 	}
 

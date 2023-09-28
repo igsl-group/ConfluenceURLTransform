@@ -1,8 +1,10 @@
 package com.igsl.handler.jira;
 
 import java.net.URI;
+import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,13 +24,14 @@ public class PostMigrate extends Jira {
 
 	private static final URLPattern[] PATTERNS = new URLPattern[] {
 		new URLPattern().setPath("/secure/RapidBoard.jspa").setQuery("rapidView"),
+		new URLPattern().setPathRegex("/secure/attachment/.+"),
+		new URLPattern().setPath("/secure/Dashboard.jspa").setQuery("pageId", "selectPageId"),
+		new URLPattern().setPath("/servicedesk/customer/portal/[0-9]+"),
+		
 		new URLPattern().setPath("/issues").setQuery("filter", "jql"),
 		new URLPattern().setPath("/browse").setQuery("filter", "jql"),
-		new URLPattern().setPath("/secure/Dashboard.jspa").setQuery("pageId", "selectPageId"),
-		new URLPattern().setPath("/secure/attachment/"),
 		new URLPattern().setPath("/secure/IssueNavigator.jspa"),
 		new URLPattern().setPathRegex("/projects/[^#?]*").setQuery("filter", "jql"),
-		new URLPattern().setPath("/servicedesk/customer/portal/[0-9]+"),
 		new URLPattern().setPath("/secure/ReleaseNote.jspa").setQuery("projectId", "version"),
 		new URLPattern().setPath("/secure/viewavatar").setQuery("avatarId"),
 		new URLPattern().setPath("/secure/BrowseProjects.jspa"),
@@ -56,16 +59,18 @@ public class PostMigrate extends Jira {
 		}
 		for (URLPattern path : PATTERNS) {
 			if (path.match(uri)) {
-				LOGGER.info("Jira PostMigrate accepts: [" + uri + "]");
+				LOGGER.debug("Jira PostMigrate accepts: [" + uri + "]");
 				return true;
 			}
 		}
-		LOGGER.info("Jira PostMigrate rejects: [" + uri + "]");
+		LOGGER.debug("Jira PostMigrate rejects: [" + uri + "]");
 		return false;
 	}
 
 	@Override
 	public HandlerResult handle(URI uri, String text) throws Exception {
+		URIBuilder parser = new URIBuilder(uri);
+		List<NameValuePair> params = parser.getQueryParams();
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme(config.getUrlTransform().getToScheme());
 		builder.setHost(config.getUrlTransform().getJiraToHost());
@@ -76,7 +81,7 @@ public class PostMigrate extends Jira {
 						originalPath.substring(config.getUrlTransform().getJiraFromBasePath().length()) : 
 						originalPath)
 				));
-		builder.setCustomQuery(uri.getQuery());
+		builder.setParameters(params);
 		builder.setFragment(uri.getFragment());
 		return new HandlerResult(builder.build());
 	}

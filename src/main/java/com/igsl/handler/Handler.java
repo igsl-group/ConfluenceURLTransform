@@ -47,27 +47,12 @@ public abstract class Handler {
 	}
 
 	/**
-	 * Parse query string into Map<String, String>.
-	 * @param query String, query string
-	 * @return Map<String, String>
-	 */
-	protected Map<String, String> parseQuery(String query) {
-		Pattern pattern = Pattern.compile("([^&=]+)=([^&]*)");
-		Matcher matcher = pattern.matcher(query);
-		Map<String, String> map = new HashMap<>();
-		while (matcher.find()) {
-			map.put(matcher.group(1), matcher.group(2));
-		}
-		return map;
-	}
-
-	/**
 	 * URL decode string
 	 * @param s String
 	 * @return String
 	 * @throws UnsupportedEncodingException
 	 */
-	protected String decode(String s) throws UnsupportedEncodingException {
+	public static String decode(String s) throws UnsupportedEncodingException {
 		return URLDecoder.decode(s, ENCODING);
 	}
 	
@@ -77,10 +62,10 @@ public abstract class Handler {
 	 * @return String
 	 * @throws UnsupportedEncodingException
 	 */
-	protected String encode(String s) throws UnsupportedEncodingException {
+	public static String encode(String s) throws UnsupportedEncodingException {
 		return URLEncoder.encode(s, ENCODING);
 	}
-
+	
 	/**
 	 * Create list for URIBuilder.setPathSegments()
 	 * If PATH_DELIM is found, it will be removed from start and end of each segment

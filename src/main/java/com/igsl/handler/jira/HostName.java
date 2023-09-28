@@ -1,7 +1,9 @@
 package com.igsl.handler.jira;
 
 import java.net.URI;
+import java.util.List;
 
+import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 
 import com.igsl.config.Config;
@@ -20,6 +22,8 @@ public class HostName extends Jira {
 
 	@Override
 	public HandlerResult handle(URI uri, String text) throws Exception {
+		URIBuilder parser = new URIBuilder(uri);
+		List<NameValuePair> params = parser.getQueryParams();
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme(config.getUrlTransform().getToScheme());
 		builder.setHost(config.getUrlTransform().getJiraToHost());
@@ -30,7 +34,7 @@ public class HostName extends Jira {
 						originalPath.substring(config.getUrlTransform().getJiraFromBasePath().length()) : 
 						originalPath)
 				));
-		builder.setCustomQuery(uri.getQuery());
+		builder.setParameters(params);
 		builder.setFragment(uri.getFragment());
 		return new HandlerResult(builder.build());
 	}

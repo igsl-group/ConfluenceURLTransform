@@ -36,9 +36,10 @@
         ]
     },
     "objectExport": {
-        "outputDirectory": "objectExport",
+        "outputDirectory": "output/objectExport",
         "handlers": [
-            "com.igsl.export.Dashboard"
+            "com.igsl.export.JiraDashboard",
+            "com.igsl.export.JiraRapidBoard"
         ]
     }
 }

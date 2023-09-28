@@ -1,13 +1,16 @@
 package com.igsl.handler.confluence;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,13 +51,14 @@ public class Page extends Confluence {
 	public HandlerResult handle(URI uri, String text) throws Exception {
 		String title = null;
 		String spaceKey = null;
-		String query = StringEscapeUtils.unescapeHtml4(uri.getQuery());
+		String query = uri.getQuery();
 		String pageIdString = null;
 		Matcher pageIdMatcher = PAGEID_REGEX.matcher(query);
 		if (pageIdMatcher.find()) {
 			pageIdString = pageIdMatcher.group(1);
 		}
-		Map<String, String> queries = parseQuery(query);
+		URIBuilder parser = new URIBuilder(uri);
+		List<NameValuePair> params = parser.getQueryParams();
 		if (pageIdString != null) {
 			int pageId = Integer.parseInt(pageIdString);
 			try (PreparedStatement ps = config.getConnections().getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
@@ -84,10 +88,10 @@ public class Page extends Confluence {
 			builder.addParameter(PARAM_SPACEKEY, title);
 			builder.addParameter(PARAM_TITLE, spaceKey);
 		}
-		for (Map.Entry<String, String> q : queries.entrySet()) {
+		for (NameValuePair q : params) {
 			// TODO Keep PARAM_PREVIEW if post migration patching is used
-			if (!PARAM_PAGEID.equals(q.getKey()) && !PARAM_PREVIEW.equals(q.getKey())) {
-				builder.addParameter(q.getKey(), q.getValue());
+			if (!PARAM_PAGEID.equals(q.getName()) && !PARAM_PREVIEW.equals(q.getName())) {
+				builder.addParameter(q.getName(), q.getValue());
 			}
 		}
 		return new HandlerResult(builder.build());
