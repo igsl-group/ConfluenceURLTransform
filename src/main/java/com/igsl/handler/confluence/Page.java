@@ -85,8 +85,8 @@ public class Page extends Confluence {
 		builder.setFragment(uri.getFragment());
 		// Add back query parameters, except pageId and preview
 		if (title != null && spaceKey != null) {
-			builder.addParameter(PARAM_SPACEKEY, title);
-			builder.addParameter(PARAM_TITLE, spaceKey);
+			builder.addParameter(PARAM_SPACEKEY, spaceKey);
+			builder.addParameter(PARAM_TITLE, title);
 		}
 		for (NameValuePair q : params) {
 			// TODO Keep PARAM_PREVIEW if post migration patching is used

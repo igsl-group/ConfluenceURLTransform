@@ -1,0 +1,45 @@
+{
+    "connections": {
+        "confluenceConnectionString": "jdbc:mysql://localhost:3307/test",
+        "confluenceUser": "root",
+        "confluencePassword": "P@ssw0rd", 
+        "jiraConnectionString": "jdbc:mysql://localhost:3307/jira",
+        "jiraUser": "root",
+        "jiraPassword": "P@ssw0rd"
+    },
+    "urlTransform": {
+        "performUpdate": false,
+        "outputDirectory": "output",
+        "postMigrateListBaseName": "PostMigrate",
+        "urlListBaseName": "URL",
+        "urlIgnoredBaseName": "URLIgnored",
+        "urlErrorBaseName": "URLError",
+        "defaultScheme": "https",
+        "fromSchemeRegex": "https?",
+        "toScheme": "https",
+        "confluenceFromHost": "wiki.pccwglobal.com",
+        "confluenceFromBasePath": "",
+        "confluenceToHost": "pccwglobal.atlassian.net",
+        "confluenceToBasePath": "/wiki",
+        "jiraFromHost": "jira.pccwglobal.com",
+        "jiraFromBasePath": "",
+        "jiraToHost": "pccwglobal.atlassian.net",
+        "jiraToBasePath": "/jira",
+        "handlers": [
+            "com.igsl.handler.confluence.TinyURL",
+            "com.igsl.handler.confluence.Page",
+            "com.igsl.handler.confluence.Download",
+            "com.igsl.handler.confluence.PostMigrate",
+            "com.igsl.handler.confluence.HostName",
+            "com.igsl.handler.jira.PostMigrate",
+            "com.igsl.handler.jira.HostName"
+        ]
+    },
+    "objectExport": {
+        "outputDirectory": "output/objectExport",
+        "handlers": [
+            "com.igsl.export.JiraDashboard",
+            "com.igsl.export.JiraRapidBoard"
+        ]
+    }
+}

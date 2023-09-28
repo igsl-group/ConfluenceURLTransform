@@ -44,6 +44,7 @@ public class Download extends Confluence {
 				try (ResultSet rs = ps.executeQuery()) {
 					if (rs.next()) {
 						String pageTitle = rs.getString(1);
+						String spaceKey = rs.getString(2);
 						/*
 						 * Attachment tag should look like: 
 						 * 	<ac:link>
@@ -56,7 +57,9 @@ public class Download extends Confluence {
 						StringBuilder sb = new StringBuilder();
 						sb.append("<ac:link>");
 						sb.append("<ri:attachment ri:filename=\"").append(fileName).append("\">");
-						sb.append("<ri:page ri:content-title=\"").append(pageTitle).append("\"/>");
+						sb.append("<ri:page ");
+						sb.append("ri:space-key=\"").append(spaceKey).append("\" ");
+						sb.append("ri:content-title=\"").append(pageTitle).append("\"/>");
 						sb.append("</ri:attachment>");
 						sb.append("<ac:plain-text-link-body><![CDATA[").append(text).append("]]></ac:plain-text-link-body>");
 						sb.append("</ac:link>");

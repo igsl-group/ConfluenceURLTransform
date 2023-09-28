@@ -76,14 +76,16 @@ public abstract class Handler {
 	protected static List<String> addPathSegments(String... segments) {
 		List<String> result = new ArrayList<>();
 		for (String segment : segments) {
-			if (segment.startsWith(PATH_DELIM)) {
-				segment = segment.substring(PATH_DELIM.length());
-			}
-			if (segment.endsWith(PATH_DELIM)) {
-				segment = segment.substring(0, segment.length() - 1);
-			}
-			for (String s : segment.split(Pattern.quote(PATH_DELIM))) {
-				result.add(s);
+			if (segment != null && !segment.isBlank()) {
+				if (segment.startsWith(PATH_DELIM)) {
+					segment = segment.substring(PATH_DELIM.length());
+				}
+				if (segment.endsWith(PATH_DELIM)) {
+					segment = segment.substring(0, segment.length() - 1);
+				}
+				for (String s : segment.split(Pattern.quote(PATH_DELIM))) {
+					result.add(s);
+				}
 			}
 		}
 		return result;
