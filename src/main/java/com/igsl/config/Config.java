@@ -1,13 +1,18 @@
 package com.igsl.config;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Config {
 	private static final String NEWLINE = System.getProperty("line.separator");	
 	private Connections connections;
 	private URLTransform urlTransform;	
 	private ObjectExport objectExport;
+	@JsonIgnore
+	private Path outputDirectory;
 	public void validate() throws Exception {
 		List<String> messages = new ArrayList<>();
 		if (connections != null) {
@@ -50,5 +55,11 @@ public class Config {
 	}
 	public void setObjectExport(ObjectExport objectExport) {
 		this.objectExport = objectExport;
+	}
+	public Path getOutputDirectory() {
+		return outputDirectory;
+	}
+	public void setOutputDirectory(Path outputDirectory) {
+		this.outputDirectory = outputDirectory;
 	}
 }

@@ -3,7 +3,6 @@ package com.igsl;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,13 +50,16 @@ public class ConfluenceURLTransform {
 	private static final int GROUP_HREF = 3;
 	private static final int GROUP_AFTER_HREF = 4;
 	private static final int GROUP_TEXT = 5;
+	private static final String OUTPUT_URL_ERRORS = "URL Errors.csv";
+	private static final String OUTPUT_URL_UPDATED = "URL Updated.csv";
+	private static final String OUTPUT_URL_IGNORED = "URL Ignored.csv";
 	
 	private static void closeConnection(Connection conn) {
 		if (conn != null) {
 			try {
 				conn.close();
 			} catch (Exception ex) {
-				LOGGER.error("Failed to close connection", ex);
+				Log.error(LOGGER, "Failed to close connection", ex);
 			}
 		}
 	}
@@ -74,39 +76,21 @@ public class ConfluenceURLTransform {
 		try {
 			long startTime = System.currentTimeMillis();
 			if (config.getUrlTransform().isPerformUpdate()) {
-				LOGGER.info("performUpdate is true, database will be updated");
+				Log.info(LOGGER, "performUpdate is true, database will be updated");
 			} else {
-				LOGGER.info("performUpdate is false, database will not be updated");
+				Log.info(LOGGER, "performUpdate is false, database will not be updated");
 			}
-			String outputPrefix = System.getProperty("user.dir") + PATH_DELIM;
-			if (config.getUrlTransform().getOutputDirectory() != null) {
-				Path p = Paths.get(config.getUrlTransform().getOutputDirectory());
-				if (!Files.exists(p)) {
-					p = Files.createDirectories(p);
-					outputPrefix = p.toAbsolutePath().toString() + PATH_DELIM;
-				} else {
-					if (Files.isDirectory(p)) {
-						outputPrefix = p.toAbsolutePath().toString() + PATH_DELIM;
-					} else {
-						LOGGER.error("Output directory \"" + config.getUrlTransform().getOutputDirectory() + "\" is not a directory, output file will be written to current directory");
-					}
-				}
-			}
-			String outputSuffix = "." + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".csv";
-			String postMigrateList = outputPrefix + config.getUrlTransform().getPostMigrateListBaseName() + outputSuffix;
-			String urlList = outputPrefix + config.getUrlTransform().getUrlListBaseName() + outputSuffix;
-			String ignoreList = outputPrefix + config.getUrlTransform().getUrlIgnoredBaseName() + outputSuffix;
-			String errorList = outputPrefix + config.getUrlTransform().getUrlErrorBaseName() + outputSuffix;
+			String urlList = config.getOutputDirectory().resolve(OUTPUT_URL_UPDATED).toFile().getAbsolutePath();
+			String ignoreList = config.getOutputDirectory().resolve(OUTPUT_URL_IGNORED).toFile().getAbsolutePath();
+			String errorList = config.getOutputDirectory().resolve(OUTPUT_URL_ERRORS).toFile().getAbsolutePath();
 			try (
-					CSVPrinter postMigratePrinter = new CSVPrinter(new FileWriter(postMigrateList), CSVFormat.DEFAULT);
 					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSVFormat.DEFAULT);
 					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSVFormat.DEFAULT);
 					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSVFormat.DEFAULT);
 				) {
-				LOGGER.info("Post migrate list will be written to: " + postMigrateList);
-				LOGGER.info("URL list will be written to: " + urlList);
-				LOGGER.info("Ignored URL list will be written to: " + ignoreList);
-				postMigratePrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID");
+				Log.info(LOGGER, "URLs updated will be written to: " + urlList);
+				Log.info(LOGGER, "URLs ignored will be written to: " + ignoreList);
+				Log.info(LOGGER, "Ignored URL list will be written to: " + errorList);
 				urlPrinter.printRecord("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO");
 				ignorePrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL");
 				errorPrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER");
@@ -118,17 +102,16 @@ public class ConfluenceURLTransform {
 								.getDeclaredConstructor(Config.class).newInstance(config);
 						handlers.add(h);
 					} catch (Exception ex) {
-						LOGGER.error("Unable to create handler " + handlerName, ex);
+						Log.error(LOGGER, "Unable to create handler " + handlerName, ex);
 					}
 				}
 				Connection confluenceConn = config.getConnections().getConfluenceConnection();
-				Connection jiraConn = config.getConnections().getJiraConnection();
 				try (PreparedStatement query = confluenceConn.prepareStatement(QUERY)) {
 					ResultSet rs = query.executeQuery();
 					while (rs.next()) {
 						pageCount++;
 						String id = rs.getString(1);
-						LOGGER.debug("Processing body content ID: " + id);
+						Log.debug(LOGGER, "Processing body content ID: " + id);
 						String body = rs.getString(2);
 						String spaceKey = rs.getString(3);
 						String title = rs.getString(4);
@@ -159,7 +142,7 @@ public class ConfluenceURLTransform {
 											accepted = true;
 											changed = true;
 											urlUpdatedCount++;
-											LOGGER.debug(
+											Log.debug(LOGGER, 
 													handler.getClass() + ": " + 
 													"ID: [" + id + "] " + 
 													"From: [" + tag + "] " + 
@@ -176,7 +159,7 @@ public class ConfluenceURLTransform {
 											changed = true;
 											urlUpdatedCount++;
 											String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
-											LOGGER.debug(
+											Log.debug(LOGGER, 
 													handler.getClass() + ": " + 
 													"ID: [" + id + "] " + 
 													"From URL: [" + urlString + "] " + 
@@ -206,22 +189,21 @@ public class ConfluenceURLTransform {
 								if (!accepted) {
 									urlIgnoredCount++;
 									ignorePrinter.printRecord(spaceKey, title, id, urlString);
-									LOGGER.debug("Unaccepted URL: " + urlString);
+									Log.debug(LOGGER, "Unaccepted URL: " + urlString);
 								}
 							} catch (Exception ex) {
-								LOGGER.debug("Ignoring invalid URI: " + urlString);
+								Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
 								urlError++;
 								errorPrinter.printRecord(spaceKey, title, id, urlString, ex.getMessage(), handlerName);
 							}
 						}	// While matcher.find
 						matcher.appendTail(sb);
 						if (postMigrate) {
-							postMigratePrinter.printRecord(spaceKey, title, id);
 							pagePostMigrateCount++;
 						}
 						if (changed) {
 							pageUpdatedCount++;
-							LOGGER.debug(
+							Log.debug(LOGGER, 
 									"ID: " + id + " " + 
 									"Source: [" + body + "] " + 
 									"Result: [" + sb.toString() + "]");
@@ -231,15 +213,15 @@ public class ConfluenceURLTransform {
 									update.setString(2, id);
 									int count = update.executeUpdate();
 									if (count == 1) {
-										LOGGER.debug("ID: " + id + " Updated successfully");
+										Log.debug(LOGGER, "ID: " + id + " Updated successfully");
 										confluenceConn.commit();
 									} else {
-										LOGGER.debug("ID: " + id + " Update failed, more than 1 row got updated, rolling back");
+										Log.debug(LOGGER, "ID: " + id + " Update failed, more than 1 row got updated, rolling back");
 										confluenceConn.rollback();
 									}
 								} catch (Exception ex) {
 									ex.printStackTrace();
-									LOGGER.error("ID: " + id + " Update failed, rolling back");
+									Log.error(LOGGER, "ID: " + id + " Update failed, rolling back");
 									confluenceConn.rollback();
 								}
 							}
@@ -272,38 +254,24 @@ public class ConfluenceURLTransform {
 					}	// ResultSet loop
 				}	// Try PreparedStatement
 			} catch (Exception ex) {
-				LOGGER.error("Error", ex);
+				Log.error(LOGGER, "Error", ex);
 			}
 			long stopTime = System.currentTimeMillis();
-			LOGGER.info("Execution time: From " + startTime + " to " + stopTime + ", elapsed: " + (stopTime - startTime));
-			LOGGER.info("Page count: " + pageCount);
-			LOGGER.info("Page updated: " + pageUpdatedCount);
-			LOGGER.info("URL count: " + urlCount);
-			LOGGER.info("Invalid URL: " + urlError);
-			LOGGER.info("URL updated: " + urlUpdatedCount);
-			LOGGER.info("URL ignored: " + urlIgnoredCount);
-			LOGGER.info("Page requiring post migration (among page updated): " + pagePostMigrateCount);
-			LOGGER.info("URL requiring post migration (among url updated): " + urlPostMigrateCount);
+			Log.info(LOGGER, "Execution time: From " + startTime + " to " + stopTime + ", elapsed: " + (stopTime - startTime));
+			Log.info(LOGGER, "Page count: " + pageCount);
+			Log.info(LOGGER, "Page updated: " + pageUpdatedCount);
+			Log.info(LOGGER, "URL count: " + urlCount);
+			Log.info(LOGGER, "Invalid URL: " + urlError);
+			Log.info(LOGGER, "URL updated: " + urlUpdatedCount);
+			Log.info(LOGGER, "URL ignored: " + urlIgnoredCount);
+			Log.info(LOGGER, "Page requiring post migration (among page updated): " + pagePostMigrateCount);
+			Log.info(LOGGER, "URL requiring post migration (among url updated): " + urlPostMigrateCount);
 		} catch (Exception ex) {
-			LOGGER.error("Error", ex);
+			Log.error(LOGGER, "Error", ex);
 		}
 	}
 	
 	private static void exportObjects(Config config) throws Exception {
-		String outputPrefix = ".";
-		if (config.getObjectExport().getOutputDirectory() != null) {
-			Path p = Paths.get(config.getObjectExport().getOutputDirectory());
-			if (!Files.exists(p)) {
-				p = Files.createDirectories(p);
-				outputPrefix = p.toAbsolutePath().toString() + PATH_DELIM;
-			} else {
-				if (Files.isDirectory(p)) {
-					outputPrefix = p.toAbsolutePath().toString() + PATH_DELIM;
-				} else {
-					LOGGER.error("Output directory \"" + config.getObjectExport().getOutputDirectory() + "\" is not a directory, output file will be written to current directory");
-				}
-			}
-		}
 		List<ObjectExport> exporters = new ArrayList<>(); 
 		for (String exporterName : config.getObjectExport().getHandlers()) {
 			try {
@@ -311,15 +279,15 @@ public class ConfluenceURLTransform {
 						.getDeclaredConstructor().newInstance();
 				exporters.add(exporter);
 			} catch (Exception ex) {
-				LOGGER.error("Unable to create object exporter " + exporterName, ex);
+				Log.error(LOGGER, "Unable to create object exporter " + exporterName, ex);
 			}
 		}
 		for (ObjectExport exporter : exporters) {
 			try {
 				Path p = exporter.exportObjects(config);
-				LOGGER.info(exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());
+				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());
 			} catch (Exception ex) {
-				LOGGER.error("Error", ex);
+				Log.error(LOGGER, "Error", ex);
 			}
 		}
 	}
@@ -335,6 +303,16 @@ public class ConfluenceURLTransform {
 				config = or.readValue(in);
 			}
 			config.validate();
+			Path outputDirectory = Paths.get(
+					System.getProperty("user.dir"), 
+					new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()));
+			if (!Files.exists(outputDirectory)) {
+				outputDirectory = Files.createDirectories(outputDirectory);
+			} 
+			if (!Files.isDirectory(outputDirectory)) {
+				throw new Exception("Output directory cannot be created");
+			}		
+			config.setOutputDirectory(outputDirectory);
 			// Get password
 			if (config.getConnections().getConfluencePassword() == null) {
 				Console.println("For Confluence database at: %1s\n", config.getConnections().getConfluenceConnectionString());
@@ -376,7 +354,7 @@ public class ConfluenceURLTransform {
 			urlTransform(config);
 			exportObjects(config);
 		} catch (Exception ex) {
-			LOGGER.error("Error", ex);
+			Log.error(LOGGER, "Error", ex);
 		} finally {
 			closeConnection(jiraConn);
 			closeConnection(confluenceConn);

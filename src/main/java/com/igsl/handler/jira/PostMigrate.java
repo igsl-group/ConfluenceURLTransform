@@ -9,6 +9,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.igsl.Log;
 import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
 import com.igsl.handler.URLPattern;
@@ -59,11 +60,11 @@ public class PostMigrate extends Jira {
 		}
 		for (URLPattern path : PATTERNS) {
 			if (path.match(uri)) {
-				LOGGER.debug("Jira PostMigrate accepts: [" + uri + "]");
+				Log.debug(LOGGER, "Jira PostMigrate accepts: [" + uri + "]");
 				return true;
 			}
 		}
-		LOGGER.debug("Jira PostMigrate rejects: [" + uri + "]");
+		Log.debug(LOGGER, "Jira PostMigrate rejects: [" + uri + "]");
 		return false;
 	}
 

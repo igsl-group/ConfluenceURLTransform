@@ -4,7 +4,9 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%m%n" />
         </Console>
-        <RollingFile name="RollingFile" fileName="ConfluenceURLPatch.log" filePattern="ConfluenceURLPatch.%d{yyyy-MM-dd}.log.gz">
+        <RollingFile name="RollingFile" 
+            fileName="ConfluenceURLTransform.log" 
+            filePattern="ConfluenceURLTransform.%d{yyyy-MM-dd}.log.gz">
             <PatternLayout>
                 <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
             </PatternLayout>
@@ -18,11 +20,10 @@
             <AppenderRef ref="RollingFile" />
             <AppenderRef ref="Console" />
         </Root>
-        <Logger name="com.igsl" level="debug" additivity="false">
-            <AppenderRef ref="RollingFile" />
-            <AppenderRef ref="Console">
-                <LevelRangeFilter minLevel="info" maxLevel="info" onMatch="ACCEPT" onMismatch="DENY"/>
-            </AppenderRef>
+        <!--
+        <Logger name="com.igsl" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
         </Logger>
+        -->
     </Loggers>
 </Configuration>

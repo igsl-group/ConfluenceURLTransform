@@ -9,11 +9,6 @@
     },
     "urlTransform": {
         "performUpdate": false,
-        "outputDirectory": "output",
-        "postMigrateListBaseName": "PostMigrate",
-        "urlListBaseName": "URL",
-        "urlIgnoredBaseName": "URLIgnored",
-        "urlErrorBaseName": "URLError",
         "defaultScheme": "https",
         "fromSchemeRegex": "https?",
         "toScheme": "https",
@@ -36,7 +31,6 @@
         ]
     },
     "objectExport": {
-        "outputDirectory": "output/objectExport",
         "handlers": [
             "com.igsl.export.JiraDashboard",
             "com.igsl.export.JiraRapidBoard"

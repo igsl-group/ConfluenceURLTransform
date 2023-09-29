@@ -4,16 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class URLTransform implements ConfigInterface {
-	// Output directory for CSV files
-	private String outputDirectory;
-	// Pages requiring post migration
-	private String postMigrateListBaseName;
-	// URLs updated
-	private String urlListBaseName;
-	// URLs not updated due to errors
-	private String urlErrorBaseName;
-	// URLs not updated
-	private String urlIgnoredBaseName;
 	// Switch to enable/disable update of BODYCONTENT table
 	private boolean performUpdate;
 	// Default scheme if the URL has none
@@ -43,18 +33,6 @@ public class URLTransform implements ConfigInterface {
 	@Override
 	public List<String> validate() {
 		List<String> messages = new ArrayList<>();
-		if (postMigrateListBaseName == null) {
-			messages.add("postMigrateListBaseName is not specified. Please provide a file name.");
-		}
-		if (urlListBaseName == null) {
-			messages.add("urlListBaseName is not specified. Please provide a file name.");
-		}
-		if (urlIgnoredBaseName == null) {
-			messages.add("urlIgnoredBaseName is not specified. Please provide a file name.");
-		}
-		if (urlErrorBaseName == null) {
-			messages.add("urlErrorBaseName is not specified. Please provide a file name.");
-		}
 		if (defaultScheme == null || defaultScheme.isBlank()) {
 			messages.add("defaultScheme is empty. Please provide a default URL scheme, e.g. \"https\"");
 		}
@@ -170,35 +148,5 @@ public class URLTransform implements ConfigInterface {
 	}
 	public void setHandlers(List<String> handlers) {
 		this.handlers = handlers;
-	}
-	public String getOutputDirectory() {
-		return outputDirectory;
-	}
-	public void setOutputDirectory(String outputDirectory) {
-		this.outputDirectory = outputDirectory;
-	}
-	public String getPostMigrateListBaseName() {
-		return postMigrateListBaseName;
-	}
-	public void setPostMigrateListBaseName(String postMigrateListBaseName) {
-		this.postMigrateListBaseName = postMigrateListBaseName;
-	}
-	public String getUrlListBaseName() {
-		return urlListBaseName;
-	}
-	public void setUrlListBaseName(String urlListBaseName) {
-		this.urlListBaseName = urlListBaseName;
-	}
-	public String getUrlErrorBaseName() {
-		return urlErrorBaseName;
-	}
-	public void setUrlErrorBaseName(String urlErrorBaseName) {
-		this.urlErrorBaseName = urlErrorBaseName;
-	}
-	public String getUrlIgnoredBaseName() {
-		return urlIgnoredBaseName;
-	}
-	public void setUrlIgnoredBaseName(String urlIgnoredBaseName) {
-		this.urlIgnoredBaseName = urlIgnoredBaseName;
 	}
 }

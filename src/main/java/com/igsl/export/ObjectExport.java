@@ -26,15 +26,7 @@ import com.igsl.config.Config;
  */
 public abstract class ObjectExport {
 	protected Path getOutputPath(Config config) throws IOException {
-		Path dir = Paths.get(config.getObjectExport().getOutputDirectory());
-		if (!Files.exists(dir)) {
-			dir = Files.createDirectories(dir);
-		} else {
-			if (!Files.isDirectory(dir)) {
-				dir = Paths.get(".");
-			}
-		}
-		return Paths.get(dir.toFile().getAbsolutePath(), this.getClass().getSimpleName() + ".csv");
+		return Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), this.getClass().getSimpleName() + ".csv");
 	}
 	public abstract Path exportObjects(Config config) throws Exception;
 }
