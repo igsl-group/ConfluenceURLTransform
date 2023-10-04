@@ -16,14 +16,13 @@
         </RollingFile>
     </Appenders>
     <Loggers>
-        <Root level="info">
-            <AppenderRef ref="RollingFile" />
-            <AppenderRef ref="Console" />
+        <Root level="debug">
+            <AppenderRef ref="RollingFile" level="debug" />
+            <AppenderRef ref="Console" level="info"/>
         </Root>
-        <!--
-        <Logger name="com.igsl" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
+        <Logger name="com.igsl" level="debug" additivity="false">
+            <AppenderRef ref="RollingFile" level="debug" />
+            <AppenderRef ref="Console" level="info" />
         </Logger>
-        -->
     </Loggers>
 </Configuration>

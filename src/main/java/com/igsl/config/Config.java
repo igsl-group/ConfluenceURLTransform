@@ -8,9 +8,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Config {
 	private static final String NEWLINE = System.getProperty("line.separator");	
+	private Cloud cloud;
 	private Connections connections;
 	private URLTransform urlTransform;	
-	private ObjectExport objectExport;
+	private ObjectExport dcExport;
 	@JsonIgnore
 	private Path outputDirectory;
 	public void validate() throws Exception {
@@ -25,8 +26,8 @@ public class Config {
 		} else {
 			messages.add("urlTransform is not specified");
 		}
-		if (objectExport != null) {
-			messages.addAll(objectExport.validate());
+		if (dcExport != null) {
+			messages.addAll(dcExport.validate());
 		} else {
 			messages.add("objectExport is not specified");
 		}
@@ -50,16 +51,22 @@ public class Config {
 	public void setUrlTransform(URLTransform urlTransform) {
 		this.urlTransform = urlTransform;
 	}
-	public ObjectExport getObjectExport() {
-		return objectExport;
-	}
-	public void setObjectExport(ObjectExport objectExport) {
-		this.objectExport = objectExport;
-	}
 	public Path getOutputDirectory() {
 		return outputDirectory;
 	}
 	public void setOutputDirectory(Path outputDirectory) {
 		this.outputDirectory = outputDirectory;
+	}
+	public Cloud getCloud() {
+		return cloud;
+	}
+	public void setCloud(Cloud cloud) {
+		this.cloud = cloud;
+	}
+	public ObjectExport getDcExport() {
+		return dcExport;
+	}
+	public void setDcExport(ObjectExport dcExport) {
+		this.dcExport = dcExport;
 	}
 }

@@ -2,7 +2,6 @@ package com.igsl.handler.jira;
 
 import java.net.URI;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
@@ -28,25 +27,21 @@ public class PostMigrate extends Jira {
 		new URLPattern().setPathRegex("/secure/attachment/.+"),
 		new URLPattern().setPath("/secure/Dashboard.jspa").setQuery("pageId", "selectPageId"),
 		new URLPattern().setPath("/servicedesk/customer/portal/[0-9]+"),
-		
-		new URLPattern().setPath("/issues").setQuery("filter", "jql"),
-		new URLPattern().setPath("/browse").setQuery("filter", "jql"),
-		new URLPattern().setPath("/secure/IssueNavigator.jspa"),
-		new URLPattern().setPathRegex("/projects/[^#?]*").setQuery("filter", "jql"),
 		new URLPattern().setPath("/secure/ReleaseNote.jspa").setQuery("projectId", "version"),
-		new URLPattern().setPath("/secure/viewavatar").setQuery("avatarId"),
-		new URLPattern().setPath("/secure/BrowseProjects.jspa"),
 		new URLPattern().setPath("/secure/CreateIssue.jspa").setQuery("pid", "issuetype"),
 		new URLPattern().setPath("/secure/CreateIssue!default.jspa").setQuery("pid", "issuetype"),
-		new URLPattern().setPath("/secure/DeleteLink.jspa"),
-		new URLPattern().setPath("/secure/EditFilter.jspa"),
-		new URLPattern().setPath("/secure/EditFilter!default.jspa"),
-		new URLPattern().setPath("/secure/admin/ConfigureFieldLayout!default.jspa"),
-		new URLPattern().setPath("/secure/project/EditProject!default.jspa"),
-		new URLPattern().setPath("/servicedesk/admin/[^/]+/sla/custom/[0-9]+"),
-		new URLPattern().setPath("/secure/CreateIssueDetails!init.jspa").setQuery("pid", "issuetype"),
-		new URLPattern().setPath("/secure/DataplaneReport!default.jspa").setQuery("report"),
+		new URLPattern().setPath("/secure/project/EditProject!default.jspa").setQuery("pid"),
 		new URLPattern().setPathRegex("/servicedesk/customer/portal/[0-9]+/.*"),
+		new URLPattern().setPath("/secure/BrowseProjects.jspa").setQuery("selectedCategory"),
+		new URLPattern().setPath("/secure/DeleteLink.jspa").setQuery("id", "linkType"),
+		new URLPattern().setPath("/secure/EditFilter.jspa").setQuery("filterId"),
+		new URLPattern().setPath("/secure/EditFilter!default.jspa").setQuery("filterId"),
+		new URLPattern().setPath("/issues").setQuery("filter", "jql"),
+		new URLPattern().setPath("/browse").setQuery("filter", "jql"),
+		new URLPattern().setPath("/secure/IssueNavigator.jspa").setQuery("filter", "jql"),
+		new URLPattern().setPathRegex("/projects/[^#?]*").setQuery("filter", "jql"),
+		new URLPattern().setPath("/secure/admin/ConfigureFieldLayout!default.jspa").setQuery("id"),
+		new URLPattern().setPath("/servicedesk/admin/[^/]+/sla/custom/[0-9]+"),
 	};
 	
 	public PostMigrate(Config config) {

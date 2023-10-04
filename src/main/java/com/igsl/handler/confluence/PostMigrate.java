@@ -2,7 +2,6 @@ package com.igsl.handler.confluence;
 
 import java.net.URI;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
@@ -19,20 +18,14 @@ public class PostMigrate extends Confluence {
 	}
 
 	private static final URLPattern[] PATTERNS = new URLPattern[] {
-		new URLPattern("/display/~[^?]+"),
-		new URLPattern("/display/[^?]+").setQuery("preview"),
-		new URLPattern().setPath("/pages/viewpageattachments.action").setQuery("pageId"),
 		new URLPattern().setPath("/pages/templates2/viewpagetemplate.action").setQuery("entityId"),
 		new URLPattern().setPath("/createpage.action").setQuery("fromPageId"),
+		new URLPattern().setPath("/calendar/calendarPage.action").setQuery("calendarId"),
+		new URLPattern("/display/~[^?]+"),
+		new URLPattern("/display/[^?]+").setQuery("preview"),
 		new URLPattern().setPath("/users/viewuserprofile.action").setQuery("userName"),
-		new URLPattern().setPath("/pages/viewpage.action").setQuery("pageId"),
 		new URLPattern().setPath("/secure/ViewProfile.jspa").setQuery("name"),
-		new URLPattern().setPath("/pages/editcomment.action"),
-		new URLPattern().setPath("/pages/removecomment.action"),
-		new URLPattern().setPath("/pages/replycomment.action"),
-		new URLPattern().setPath("/admin/users/domembersofgroupsearch.action"),
 		new URLPattern().setPath("/admin/users/edituser.action").setQuery("username"),
-		new URLPattern().setPath("/calendar/calendarPage.action").setQuery("calendarId")
 	};
 	
 	public PostMigrate(Config config) {

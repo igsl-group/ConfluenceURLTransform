@@ -1,11 +1,20 @@
 {
+    "cloud": {
+        "domain": "kcwong.atlassian.net",
+        "userName": "kc.wong@igsl-group.com",
+        "apiToken": "ATATT3xFfGF0P5EWJP4LeaiMQTtcFb1koBBCiVcyUwnRoc96Mwf7P3fmgCk7bDMQIDW4agLUEoN2l1aGcAgtuZE6Qpyq6kWYB-pY7QtHOeO6xqZRGGR9vT69PzLngxn3llJ9ycUYN1YG5lQtcizqMwbFaMtLO8mvJZFZU0dI3nDswZF0Onxp-Vw=65199AF2",
+        "handlers": [
+            "com.igsl.export.cloud.CloudConfluenceSpaces",
+            "com.igsl.export.cloud.CloudConfluencePages"
+        ]
+    },
     "connections": {
         "confluenceConnectionString": "jdbc:mysql://localhost:3307/test",
         "confluenceUser": "root",
-        "confluencePassword": "P@ssw0rd", 
+        "confluencePassword": null, 
         "jiraConnectionString": "jdbc:mysql://localhost:3307/jira",
         "jiraUser": "root",
-        "jiraPassword": "P@ssw0rd"
+        "jiraPassword": null
     },
     "urlTransform": {
         "performUpdate": false,
@@ -30,10 +39,19 @@
             "com.igsl.handler.jira.HostName"
         ]
     },
-    "objectExport": {
+    "dcExport": {
         "handlers": [
-            "com.igsl.export.JiraDashboard",
-            "com.igsl.export.JiraRapidBoard"
+            "com.igsl.export.dc.JiraApplicationLink",
+            "com.igsl.export.dc.JiraAttachment",
+            "com.igsl.export.dc.JiraCustomerPortal",
+            "com.igsl.export.dc.JiraDashboard",
+            "com.igsl.export.dc.JiraFIeldLayout",
+            "com.igsl.export.dc.JiraFilter",
+            "com.igsl.export.dc.JiraIssueType",
+            "com.igsl.export.dc.JiraProject",
+            "com.igsl.export.dc.JiraProjectCategory",
+            "com.igsl.export.dc.JiraRapidBoard",
+            "com.igsl.export.dc.JiraSLA"
         ]
     }
 }

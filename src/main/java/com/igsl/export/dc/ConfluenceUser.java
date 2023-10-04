@@ -1,4 +1,4 @@
-package com.igsl.export;
+package com.igsl.export.dc;
 
 import java.io.FileWriter;
 import java.nio.file.Path;
@@ -6,29 +6,28 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
+import com.igsl.CSV;
 import com.igsl.config.Config;
 
-public class JiraProject extends ObjectExport {
+public class ConfluenceUser extends ObjectExport {
 
-	private static final String SQL = "SELECT ID, PKEY, PNAME FROM PROJECT";
+	private static final String SQL = "SELECT ID, USER_NAME FROM CWD_USER";
 	
 	@Override
 	public Path exportObjects(Config config) throws Exception {
-		Connection conn = config.getConnections().getJiraConnection();
+		Connection conn = config.getConnections().getConfluenceConnection();
 		Path p = getOutputPath(config);
 		try (	FileWriter fw = new FileWriter(p.toFile(), false);
-				CSVPrinter printer = new CSVPrinter(fw, CSVFormat.DEFAULT);
+				CSVPrinter printer = new CSVPrinter(fw, CSV.getCSVFormat());
 				PreparedStatement ps = conn.prepareStatement(SQL)) {
-			printer.printRecord("ID", "PROJECTKEY", "PROJECTNAME");
+			CSV.printRecord(printer, "ID", "USERNAME");
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
 					String id = rs.getString(1);
-					String projectKey = rs.getString(2);
-					String projectName = rs.getString(3);
-					printer.printRecord(id, projectKey, projectName);
+					String name = rs.getString(2);
+					CSV.printRecord(printer, id, name);
 				}
 			}
 		}

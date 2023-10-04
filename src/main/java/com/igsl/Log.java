@@ -28,8 +28,8 @@ public class Log {
 		logger.error(format, processArguments(args));
 	}
 
-	public static void error(Logger logger, String format, Object message, Throwable ex) {
-		logger.error(format, processArguments(message).get(0), ex);
+	public static void error(Logger logger, String format, Throwable ex) {
+		logger.error(format, ex);
 	}
 	
 	public static void debug(Logger logger, String format, Object... args) {

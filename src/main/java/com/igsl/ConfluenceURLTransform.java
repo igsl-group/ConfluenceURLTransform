@@ -1,9 +1,9 @@
 package com.igsl;
 
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
@@ -27,13 +26,18 @@ import org.apache.logging.log4j.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.igsl.config.Config;
-import com.igsl.export.ObjectExport;
+import com.igsl.export.cloud.CloudExport;
+import com.igsl.export.dc.ObjectExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
 
 public class ConfluenceURLTransform {
-	private static final String PATH_DELIM = FileSystems.getDefault().getSeparator();
 	private static final Logger LOGGER = LogManager.getLogger(ConfluenceURLTransform.class);
+	
+	private static final String COMMAND_TRANSFORM_URL = "urltransform";
+	private static final String COMMAND_DC_EXPORT = "dcexport";
+	private static final String COMMAND_CLOUD_EXPORT = "cloudexport";
+	
 	private static final String QUERY = 
 			"SELECT bc.BODYCONTENTID, bc.BODY, s.SPACEKEY, c.TITLE " + 
 			"FROM BODYCONTENT bc " + 
@@ -53,6 +57,7 @@ public class ConfluenceURLTransform {
 	private static final String OUTPUT_URL_ERRORS = "URL Errors.csv";
 	private static final String OUTPUT_URL_UPDATED = "URL Updated.csv";
 	private static final String OUTPUT_URL_IGNORED = "URL Ignored.csv";
+	private static final String OUTPUT_PAGE_POST_MIGRATE = "Post Migrate.csv";
 	
 	private static void closeConnection(Connection conn) {
 		if (conn != null) {
@@ -83,17 +88,21 @@ public class ConfluenceURLTransform {
 			String urlList = config.getOutputDirectory().resolve(OUTPUT_URL_UPDATED).toFile().getAbsolutePath();
 			String ignoreList = config.getOutputDirectory().resolve(OUTPUT_URL_IGNORED).toFile().getAbsolutePath();
 			String errorList = config.getOutputDirectory().resolve(OUTPUT_URL_ERRORS).toFile().getAbsolutePath();
+			String pageList = config.getOutputDirectory().resolve(OUTPUT_PAGE_POST_MIGRATE).toFile().getAbsolutePath();
 			try (
-					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSVFormat.DEFAULT);
-					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSVFormat.DEFAULT);
-					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSVFormat.DEFAULT);
+					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSV.getCSVFormat());
+					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSV.getCSVFormat());
+					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSV.getCSVFormat());
+					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList), CSV.getCSVFormat());
 				) {
 				Log.info(LOGGER, "URLs updated will be written to: " + urlList);
 				Log.info(LOGGER, "URLs ignored will be written to: " + ignoreList);
 				Log.info(LOGGER, "Ignored URL list will be written to: " + errorList);
-				urlPrinter.printRecord("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO");
-				ignorePrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL");
-				errorPrinter.printRecord("SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER");
+				Log.info(LOGGER, "Page requiring post migrate will be written to: " +  pageList);
+				CSV.printRecord(urlPrinter, "POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO");
+				CSV.printRecord(ignorePrinter, "SPACEKEY", "TITLE", "BODYCONTENTID", "URL");
+				CSV.printRecord(errorPrinter, "SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER");
+				CSV.printRecord(pagePrinter, "SPACEKEY", "TITLE");
 				// Create handlers
 				List<Handler> handlers = new ArrayList<>();
 				for (String handlerName : config.getUrlTransform().getHandlers()) {
@@ -107,151 +116,153 @@ public class ConfluenceURLTransform {
 				}
 				Connection confluenceConn = config.getConnections().getConfluenceConnection();
 				try (PreparedStatement query = confluenceConn.prepareStatement(QUERY)) {
-					ResultSet rs = query.executeQuery();
-					while (rs.next()) {
-						pageCount++;
-						String id = rs.getString(1);
-						Log.debug(LOGGER, "Processing body content ID: " + id);
-						String body = rs.getString(2);
-						String spaceKey = rs.getString(3);
-						String title = rs.getString(4);
-						Matcher matcher = URL_PATTERN.matcher(body);
-						StringBuilder sb = new StringBuilder();
-						boolean changed = false;
-						boolean postMigrate = false;
-						while (matcher.find()) {
-							urlCount++;
-							String tag = matcher.group(0);
-							String urlString = matcher.group(GROUP_HREF);
-							String urlText = matcher.group(GROUP_TEXT);
-							String handlerName = "N/A";
-							try {
-								String urlDecoded = StringEscapeUtils.unescapeHtml4(urlString);
-								URI uri = new URI(urlDecoded);
-								boolean accepted = false;
-								for (Handler handler : handlers) {
-									if (handler.accept(uri)) {
-										handlerName = handler.getClass().getCanonicalName();
-										HandlerResult hr = handler.handle(uri, urlText);
-										switch (hr.getResultType()) {
-										case ERROR:
-											urlError++;
-											errorPrinter.printRecord(spaceKey, title, id, urlString, hr.getErrorMessage(), handlerName);
-											break;
-										case TAG: 
-											accepted = true;
-											changed = true;
-											urlUpdatedCount++;
-											Log.debug(LOGGER, 
-													handler.getClass() + ": " + 
-													"ID: [" + id + "] " + 
-													"From: [" + tag + "] " + 
-													"To: [" + hr.getTag() + "]");
-											// Replace the whole match
-											matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
-											urlPrinter.printRecord(
-													handler.needPostMigrate(), spaceKey, title, id, 
-													handler.getClass(),
-													tag, hr.getTag());
-											break;
-										case URI: 
-											accepted = true;
-											changed = true;
-											urlUpdatedCount++;
-											String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
-											Log.debug(LOGGER, 
-													handler.getClass() + ": " + 
-													"ID: [" + id + "] " + 
-													"From URL: [" + urlString + "] " + 
-													"Decoded URL: [" + urlDecoded + "] " + 
-													"Path: [" + uri.getPath() + "] " + 
-													"Query: [" + uri.getQuery() + "] " + 
-													"To URL: [" + hr.getUri().toString() + "] " +  
-													"To Escaped URL: [" + resultUrl + "]");
-											// Replace URL only
-											matcher.appendReplacement(
-													sb, "$" + GROUP_BEFORE_HREF + 
-													Matcher.quoteReplacement(resultUrl) +
-													"$" + GROUP_AFTER_HREF);
-											urlPrinter.printRecord(
-													handler.needPostMigrate(), spaceKey, title, id, 
-													handlerName,
-													urlString, resultUrl);
-											break;
+					try (ResultSet rs = query.executeQuery()) {
+						while (rs.next()) {
+							pageCount++;
+							String id = rs.getString(1);
+							Log.debug(LOGGER, "Processing body content ID: " + id);
+							String body = rs.getString(2);
+							String spaceKey = rs.getString(3);
+							String title = rs.getString(4);
+							Matcher matcher = URL_PATTERN.matcher(body);
+							StringBuilder sb = new StringBuilder();
+							boolean changed = false;
+							boolean postMigrate = false;
+							while (matcher.find()) {
+								urlCount++;
+								String tag = matcher.group(0);
+								String urlString = matcher.group(GROUP_HREF);
+								String urlText = matcher.group(GROUP_TEXT);
+								String handlerName = "N/A";
+								try {
+									String urlDecoded = StringEscapeUtils.unescapeHtml4(urlString);
+									URI uri = new URI(urlDecoded);
+									boolean accepted = false;
+									for (Handler handler : handlers) {
+										if (handler.accept(uri)) {
+											handlerName = handler.getClass().getCanonicalName();
+											HandlerResult hr = handler.handle(uri, urlText);
+											switch (hr.getResultType()) {
+											case ERROR:
+												urlError++;
+												CSV.printRecord(errorPrinter, spaceKey, title, id, urlString, hr.getErrorMessage(), handlerName);
+												break;
+											case TAG: 
+												accepted = true;
+												changed = true;
+												urlUpdatedCount++;
+												Log.debug(LOGGER, 
+														handler.getClass() + ": " + 
+														"ID: [" + id + "] " + 
+														"From: [" + tag + "] " + 
+														"To: [" + hr.getTag() + "]");
+												// Replace the whole match
+												matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
+												CSV.printRecord(urlPrinter, 
+														handler.needPostMigrate(), spaceKey, title, id, 
+														handler.getClass(),
+														tag, hr.getTag());
+												break;
+											case URI: 
+												accepted = true;
+												changed = true;
+												urlUpdatedCount++;
+												String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
+												Log.debug(LOGGER, 
+														handler.getClass() + ": " + 
+														"ID: [" + id + "] " + 
+														"From URL: [" + urlString + "] " + 
+														"Decoded URL: [" + urlDecoded + "] " + 
+														"Path: [" + uri.getPath() + "] " + 
+														"Query: [" + uri.getQuery() + "] " + 
+														"To URL: [" + hr.getUri().toString() + "] " +  
+														"To Escaped URL: [" + resultUrl + "]");
+												// Replace URL only
+												matcher.appendReplacement(
+														sb, "$" + GROUP_BEFORE_HREF + 
+														Matcher.quoteReplacement(resultUrl) +
+														"$" + GROUP_AFTER_HREF);
+												CSV.printRecord(urlPrinter, 
+														handler.needPostMigrate(), spaceKey, title, id, 
+														handlerName,
+														urlString, resultUrl);
+												break;
+											}
+											if (accepted && handler.needPostMigrate()) {
+												postMigrate = true;
+												urlPostMigrateCount++;
+											}
+											break;	// Stop after a handler accepts the URL
 										}
-										if (accepted && handler.needPostMigrate()) {
-											postMigrate = true;
-											urlPostMigrateCount++;
-										}
-										break;	// Stop after a handler accepts the URL
 									}
-								}
-								if (!accepted) {
-									urlIgnoredCount++;
-									ignorePrinter.printRecord(spaceKey, title, id, urlString);
-									Log.debug(LOGGER, "Unaccepted URL: " + urlString);
-								}
-							} catch (Exception ex) {
-								Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
-								urlError++;
-								errorPrinter.printRecord(spaceKey, title, id, urlString, ex.getMessage(), handlerName);
-							}
-						}	// While matcher.find
-						matcher.appendTail(sb);
-						if (postMigrate) {
-							pagePostMigrateCount++;
-						}
-						if (changed) {
-							pageUpdatedCount++;
-							Log.debug(LOGGER, 
-									"ID: " + id + " " + 
-									"Source: [" + body + "] " + 
-									"Result: [" + sb.toString() + "]");
-							if (config.getUrlTransform().isPerformUpdate()) {
-								try (PreparedStatement update = confluenceConn.prepareStatement(UPDATE)) {
-									update.setString(1, sb.toString());
-									update.setString(2, id);
-									int count = update.executeUpdate();
-									if (count == 1) {
-										Log.debug(LOGGER, "ID: " + id + " Updated successfully");
-										confluenceConn.commit();
-									} else {
-										Log.debug(LOGGER, "ID: " + id + " Update failed, more than 1 row got updated, rolling back");
-										confluenceConn.rollback();
+									if (!accepted) {
+										urlIgnoredCount++;
+										CSV.printRecord(ignorePrinter, spaceKey, title, id, urlString);
+										Log.debug(LOGGER, "Unaccepted URL: " + urlString);
 									}
 								} catch (Exception ex) {
-									ex.printStackTrace();
-									Log.error(LOGGER, "ID: " + id + " Update failed, rolling back");
-									confluenceConn.rollback();
+									Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
+									urlError++;
+									CSV.printRecord(errorPrinter, spaceKey, title, id, urlString, ex.getMessage(), handlerName);
 								}
+							}	// While matcher.find
+							matcher.appendTail(sb);
+							if (postMigrate) {
+								pagePostMigrateCount++;
+								CSV.printRecord(pagePrinter, spaceKey, title);
 							}
-							/*
-							 * NOTE: 
-							 * Need to flush cache on content objects or restart server to show new values.
-							 * 
-							 * Drafts are also stored in BODYCONTENT and need to be updated.
-							 * Otherwise you will open the editor and see old link values.
-							 * But since drafts are not migrated... leave this for later.
-							 * 
-							 * Reference: 
-							 * https://confluence.atlassian.com/confkb/how-to-bulk-update-confluence-content-through-the-database-to-replace-old-macros-with-new-ones-1018780615.html
-							 * https://confluence.atlassian.com/confkb/how-do-drafts-work-on-confluence-938043306.html
-							 * 
-							 * To find the drafts:
-							 * 	
-							  	SELECT cp.CONTENTID, bc.body, c.*
-								FROM CONTENTPROPERTIES cp
-								JOIN CONTENT c ON c.CONTENTID = cp.CONTENTID and c.CONTENT_STATUS = 'draft'
-								JOIN BODYCONTENT bc ON bc.CONTENTID = cp.CONTENTID
-								JOIN CONTENTPROPERTIES cpMain ON cp.STRINGVAL = cpMain.STRINGVAL AND cpMain.PROPERTYNAME = 'share-id'
-								WHERE cp.PROPERTYNAME = 'share-id' 						
-								AND cpMain.CONTENTID = <ID updated>
-								AND cp.CONTENTID != cpMain.CONTENTID;
-							 * 
-							 * The draft record remains after publishing.
-							 */
-						}	// If changed
-					}	// ResultSet loop
+							if (changed) {
+								pageUpdatedCount++;
+								Log.debug(LOGGER, 
+										"ID: " + id + " " + 
+										"Source: [" + body + "] " + 
+										"Result: [" + sb.toString() + "]");
+								if (config.getUrlTransform().isPerformUpdate()) {
+									try (PreparedStatement update = confluenceConn.prepareStatement(UPDATE)) {
+										update.setString(1, sb.toString());
+										update.setString(2, id);
+										int count = update.executeUpdate();
+										if (count == 1) {
+											Log.debug(LOGGER, "ID: " + id + " Updated successfully");
+											confluenceConn.commit();
+										} else {
+											Log.debug(LOGGER, "ID: " + id + " Update failed, more than 1 row got updated, rolling back");
+											confluenceConn.rollback();
+										}
+									} catch (Exception ex) {
+										ex.printStackTrace();
+										Log.error(LOGGER, "ID: " + id + " Update failed, rolling back");
+										confluenceConn.rollback();
+									}
+								}
+								/*
+								 * NOTE: 
+								 * Need to flush cache on content objects or restart server to show new values.
+								 * 
+								 * Drafts are also stored in BODYCONTENT and need to be updated.
+								 * Otherwise you will open the editor and see old link values.
+								 * But since drafts are not migrated... leave this for later.
+								 * 
+								 * Reference: 
+								 * https://confluence.atlassian.com/confkb/how-to-bulk-update-confluence-content-through-the-database-to-replace-old-macros-with-new-ones-1018780615.html
+								 * https://confluence.atlassian.com/confkb/how-do-drafts-work-on-confluence-938043306.html
+								 * 
+								 * To find the drafts:
+								 * 	
+								  	SELECT cp.CONTENTID, bc.body, c.*
+									FROM CONTENTPROPERTIES cp
+									JOIN CONTENT c ON c.CONTENTID = cp.CONTENTID and c.CONTENT_STATUS = 'draft'
+									JOIN BODYCONTENT bc ON bc.CONTENTID = cp.CONTENTID
+									JOIN CONTENTPROPERTIES cpMain ON cp.STRINGVAL = cpMain.STRINGVAL AND cpMain.PROPERTYNAME = 'share-id'
+									WHERE cp.PROPERTYNAME = 'share-id' 						
+									AND cpMain.CONTENTID = <ID updated>
+									AND cp.CONTENTID != cpMain.CONTENTID;
+								 * 
+								 * The draft record remains after publishing.
+								 */
+							}	// If changed
+						}	// ResultSet loop
+					}
 				}	// Try PreparedStatement
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Error", ex);
@@ -271,15 +282,36 @@ public class ConfluenceURLTransform {
 		}
 	}
 	
-	private static void exportObjects(Config config) throws Exception {
+	private static void exportCloudObjects(Config config) throws Exception {
+		List<CloudExport<?>> exporters = new ArrayList<>();
+		for (String exporterName : config.getCloud().getHandlers()) {
+			try {
+				CloudExport<?> exporter = (CloudExport<?>) Class.forName(exporterName)
+						.getDeclaredConstructor().newInstance();
+				exporters.add(exporter);
+			} catch (Exception ex) {
+				Log.error(LOGGER, "Unable to create Cloud exporter " + exporterName, ex);
+			}
+		}
+		for (CloudExport<?> exporter : exporters) {
+			try {
+				Path p = exporter.exportObjects(config);
+				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());
+			} catch (Exception ex) {
+				Log.error(LOGGER, "Error", ex);
+			}
+		}
+	}
+	
+	private static void exportDCObjects(Config config) throws Exception {
 		List<ObjectExport> exporters = new ArrayList<>(); 
-		for (String exporterName : config.getObjectExport().getHandlers()) {
+		for (String exporterName : config.getDcExport().getHandlers()) {
 			try {
 				ObjectExport exporter = (ObjectExport) Class.forName(exporterName)
 						.getDeclaredConstructor().newInstance();
 				exporters.add(exporter);
 			} catch (Exception ex) {
-				Log.error(LOGGER, "Unable to create object exporter " + exporterName, ex);
+				Log.error(LOGGER, "Unable to create DC exporter " + exporterName, ex);
 			}
 		}
 		for (ObjectExport exporter : exporters) {
@@ -293,6 +325,45 @@ public class ConfluenceURLTransform {
 	}
 	
 	public static void main(String[] args) {
+		if (args.length == 0) {
+			Log.info(LOGGER, "Available Commands: " + 
+					COMMAND_CLOUD_EXPORT + " | " + 
+					COMMAND_DC_EXPORT + " | " + 
+					COMMAND_TRANSFORM_URL);
+			try {
+				String line = Console.readLine("Command: ");
+				if (line != null && !line.isBlank()) {
+					args = line.split("\\s");
+				}
+			} catch (IOException ioex) {
+				Log.error(LOGGER, "Error", ioex);
+				return;
+			}
+		}
+		if (args.length == 0) {
+			Log.error(LOGGER, "No command provided");
+			return;
+		}
+		boolean needApiToken = false;
+		boolean needConfluenceDB = false;
+		boolean needJiraDB = false;
+		for (String arg : args) {
+			switch (arg.toLowerCase().trim()) {
+			case COMMAND_CLOUD_EXPORT:
+				needApiToken = true;
+				break;
+			case COMMAND_DC_EXPORT:
+				needJiraDB = true;
+				needConfluenceDB = true;
+				break;
+			case COMMAND_TRANSFORM_URL:
+				needConfluenceDB = true;
+				break;
+			default: 
+				Log.warn(LOGGER, "Unrecognized command \"" + arg + "\"");
+				break;
+			}
+		}
 		Connection confluenceConn = null;
 		Connection jiraConn = null;
 		try {
@@ -303,6 +374,7 @@ public class ConfluenceURLTransform {
 				config = or.readValue(in);
 			}
 			config.validate();
+			// Output directory
 			Path outputDirectory = Paths.get(
 					System.getProperty("user.dir"), 
 					new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()));
@@ -314,16 +386,16 @@ public class ConfluenceURLTransform {
 			}		
 			config.setOutputDirectory(outputDirectory);
 			// Get password
-			if (config.getConnections().getConfluencePassword() == null) {
+			if (needConfluenceDB && config.getConnections().getConfluencePassword() == null) {
 				Console.println("For Confluence database at: %1s\n", config.getConnections().getConfluenceConnectionString());
 				if (config.getConnections().getConfluenceUser() == null) {
 					config.getConnections().setConfluenceUser(Console.readLine("Confluence User: "));
-				}else {
+				} else {
 					Console.println("Confluence User: %1s", config.getConnections().getConfluenceUser());
 				}
 				config.getConnections().setConfluencePassword(new String(Console.readPassword("Confluence Password: ")));
 			}
-			if (config.getConnections().getJiraPassword() == null) {
+			if (needJiraDB && config.getConnections().getJiraPassword() == null) {
 				Console.println("For Jira database at: %1s\n", config.getConnections().getJiraConnectionString());
 				if (config.getConnections().getJiraUser() == null) {
 					config.getConnections().setJiraUser(Console.readLine("Jira User: "));
@@ -332,27 +404,46 @@ public class ConfluenceURLTransform {
 				}
 				config.getConnections().setJiraPassword(new String(Console.readPassword("Jira Password: ")));
 			}
-			// Get DB connections
-			if (config.getConnections().getConfluenceConnectionString() != null) {
+			if (needApiToken && config.getCloud().getApiToken() == null) {
+				Console.println("For Cloud site: %1s", config.getCloud().getDomain());
+				if (config.getCloud().getUserName() == null) {
+					config.getCloud().setUserName(Console.readLine("Cloud User: "));
+				} else {
+					Console.println("Cloud User: %1s", config.getCloud().getUserName());
+				}
+				config.getCloud().setApiToken(Console.readLine("API Token: "));
+			}
+			// Create DB connections
+			if (needConfluenceDB) {
 				confluenceConn = DriverManager.getConnection(
 						config.getConnections().getConfluenceConnectionString(),
 						config.getConnections().getConfluenceUser(),
 						config.getConnections().getConfluencePassword());
 				confluenceConn.setAutoCommit(false);
+				config.getConnections().setConfluenceConnection(confluenceConn);
 			}
-			if (config.getConnections().getJiraConnectionString() != null) {
+			if (needJiraDB) {
 				jiraConn = DriverManager.getConnection(
 					config.getConnections().getJiraConnectionString(),
 					config.getConnections().getJiraUser(),
 					config.getConnections().getJiraPassword());
 				jiraConn.setAutoCommit(false);
+				config.getConnections().setJiraConnection(jiraConn);
 			}
-			// Store in config
-			config.getConnections().setConfluenceConnection(confluenceConn);
-			config.getConnections().setJiraConnection(jiraConn);
 			// Execute
-			urlTransform(config);
-			exportObjects(config);
+			for (String arg : args) {
+				switch (arg) {
+				case COMMAND_CLOUD_EXPORT:
+					exportCloudObjects(config);
+					break;
+				case COMMAND_DC_EXPORT:
+					exportDCObjects(config);
+					break;
+				case COMMAND_TRANSFORM_URL:
+					urlTransform(config);
+					break;
+				}
+			}
 		} catch (Exception ex) {
 			Log.error(LOGGER, "Error", ex);
 		} finally {

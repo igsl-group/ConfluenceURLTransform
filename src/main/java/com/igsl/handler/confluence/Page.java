@@ -1,15 +1,12 @@
 package com.igsl.handler.confluence;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.text.StringEscapeUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -17,9 +14,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
-
-// https://wiki.pccwglobal.com/pages/listneworupdatedpages.action
-// Cannot invoke "java.lang.CharSequence.length()" because "this.text" is null
 
 public class Page extends Confluence {
 	
