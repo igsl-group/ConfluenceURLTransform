@@ -2,7 +2,7 @@
     "cloud": {
         "domain": "kcwong.atlassian.net",
         "userName": "kc.wong@igsl-group.com",
-        "apiToken": "ATATT3xFfGF0P5EWJP4LeaiMQTtcFb1koBBCiVcyUwnRoc96Mwf7P3fmgCk7bDMQIDW4agLUEoN2l1aGcAgtuZE6Qpyq6kWYB-pY7QtHOeO6xqZRGGR9vT69PzLngxn3llJ9ycUYN1YG5lQtcizqMwbFaMtLO8mvJZFZU0dI3nDswZF0Onxp-Vw=65199AF2",
+        "apiToken": null,
         "handlers": [
             "com.igsl.export.cloud.CloudConfluenceSpaces",
             "com.igsl.export.cloud.CloudConfluencePages"
