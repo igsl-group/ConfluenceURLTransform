@@ -26,7 +26,7 @@ import org.apache.logging.log4j.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.igsl.config.Config;
-import com.igsl.export.cloud.CloudExport;
+import com.igsl.export.cloud.BaseExport;
 import com.igsl.export.dc.ObjectExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
@@ -283,17 +283,17 @@ public class ConfluenceURLTransform {
 	}
 	
 	private static void exportCloudObjects(Config config) throws Exception {
-		List<CloudExport<?>> exporters = new ArrayList<>();
+		List<BaseExport<?>> exporters = new ArrayList<>();
 		for (String exporterName : config.getCloud().getHandlers()) {
 			try {
-				CloudExport<?> exporter = (CloudExport<?>) Class.forName(exporterName)
+				BaseExport<?> exporter = (BaseExport<?>) Class.forName(exporterName)
 						.getDeclaredConstructor().newInstance();
 				exporters.add(exporter);
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Unable to create Cloud exporter " + exporterName, ex);
 			}
 		}
-		for (CloudExport<?> exporter : exporters) {
+		for (BaseExport<?> exporter : exporters) {
 			try {
 				Path p = exporter.exportObjects(config);
 				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());

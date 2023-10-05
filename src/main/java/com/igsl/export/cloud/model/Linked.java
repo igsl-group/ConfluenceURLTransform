@@ -18,7 +18,7 @@ import com.igsl.Log;
  */
 public abstract class Linked {
 	private static final Logger LOGGER = LogManager.getLogger(Linked.class);
-	protected ConfluenceLink _links;	
+	protected ConfluenceLink _links;
 	@JsonIgnore
 	public Map<String, Object> getNext() {
 		if (_links != null && _links.getNext() != null && !_links.getNext().isBlank()) {

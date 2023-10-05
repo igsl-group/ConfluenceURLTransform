@@ -13,6 +13,7 @@ import com.igsl.config.Config;
 
 public class JiraAttachment extends ObjectExport {
 
+	// TODO Resolve author into other info
 	private static final String SQL = "SELECT ID, ISSUEID, MIMETYPE, FILENAME, AUTHOR FROM FILEATTACHMENT";
 	
 	@Override

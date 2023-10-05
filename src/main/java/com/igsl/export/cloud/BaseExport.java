@@ -21,9 +21,11 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -36,20 +38,27 @@ import com.igsl.config.Config;
 import com.igsl.export.cloud.model.Linked;
 import com.igsl.export.cloud.model.Paged;
 
-public abstract class CloudExport<T> {
-	private static final Logger LOGGER = LogManager.getLogger(CloudExport.class);	
+public abstract class BaseExport<T> {
+	private static final Logger LOGGER = LogManager.getLogger(BaseExport.class);	
 	public static final String SCHEME = "https://";
 	public static final String ENCODDING = "ASCII";	
-	private static final ObjectMapper OM = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+	private static final ObjectMapper OM = new ObjectMapper()
+			.enable(SerializationFeature.INDENT_OUTPUT)
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 	protected static final JacksonJsonProvider JACKSON_JSON_PROVIDER = 
 			new JacksonJaxbJsonProvider()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 			.configure(SerializationFeature.INDENT_OUTPUT, true);
 	
 	protected final Class<T> templateClass;
-	public CloudExport(Class<T> templateClass) {
+	public BaseExport(Class<T> templateClass) {
 		this.templateClass = templateClass;
 	}
+	
+	@JsonIgnore
+	public abstract String getLimitParameter();
+	@JsonIgnore
+	public abstract String getStartAtParameter();
 	
 	protected MultivaluedMap<String, Object> getAuthenticationHeader(Config config) throws Exception {
 		MultivaluedMap<String, Object> result = new MultivaluedHashMap<>();
@@ -69,13 +78,14 @@ public abstract class CloudExport<T> {
 			String method, 
 			MultivaluedMap<String, Object> headers, 
 			Map<String, Object> queryParameters, 
-			Object data) throws Exception {
+			Object data,
+			int... successStatuses) throws Exception {
 		T result = null;
 		Client client = ClientBuilder.newClient();
 		client.register(JACKSON_JSON_PROVIDER);
 		URI uri = new URI(SCHEME + config.getCloud().getDomain()).resolve(path);
 		WebTarget target = client.target(uri);
-		Log.debug(LOGGER, "uri: " + uri.toASCIIString());
+		Log.debug(LOGGER, "uri: " + uri.toASCIIString() + " " + method);
 		if (queryParameters != null) {
 			for (Map.Entry<String, Object> query : queryParameters.entrySet()) {
 				Log.debug(LOGGER, "query: " + query.getKey() + " = " + query.getValue());
@@ -114,15 +124,30 @@ public abstract class CloudExport<T> {
 		default:
 			throw new Exception("Invalid method \"" + method + "\"");
 		}
-		
-		// TODO Check response code
-
+		boolean success = false;
+		int status = response.getStatus();
+		Log.debug(LOGGER, uri.toASCIIString() + " status = " + status);
+		if (successStatuses != null && successStatuses.length != 0) {
+			for (int successStatus : successStatuses) {
+				if (successStatus == status) {
+					success = true;
+					break;
+				}
+			}
+		} else {
+			success = (status == HttpStatus.SC_OK);
+		}
 		String body = response.readEntity(String.class);
-		ObjectReader reader = OM.readerFor(templateClass);
-		result = reader.readValue(body);
-		ObjectWriter writer = OM.writerFor(templateClass);
-		Log.debug(LOGGER, uri.toASCIIString() + " = " + writer.writeValueAsString(result));
-		return result;
+		Log.debug(LOGGER, uri.toASCIIString() + " body = " + body);
+		if (success) {
+			ObjectReader reader = OM.readerFor(templateClass);
+			result = reader.readValue(body);
+			ObjectWriter writer = OM.writerFor(templateClass);
+			Log.debug(LOGGER, uri.toASCIIString() + " JSON = " + writer.writeValueAsString(result));
+			return result;
+		} else {
+			throw new Exception("HTTP Resposne: " + status + ", message: " + body);
+		}
 	}
 	
 	// Generic REST API invoke
@@ -132,14 +157,19 @@ public abstract class CloudExport<T> {
 			String method, 
 			MultivaluedMap<String, Object> headers, 
 			Map<String, Object> queryParameters, 
-			Object data) throws Exception {
+			Object data,
+			int... successStatuses) throws Exception {
 		List<T> result = new ArrayList<>();		
 		if (Linked.class.isAssignableFrom(templateClass)) {
 			boolean hasNext = false;
 			Map<String, Object> nextParameters = new HashMap<>();
 			nextParameters.putAll(queryParameters);
+			
+			// TODO Test paging
+			nextParameters.put(getLimitParameter(), 1);
+			
 			do {
-				T item = invokeRestCore(config, path, method, headers, nextParameters, data);
+				T item = invokeRestCore(config, path, method, headers, nextParameters, data, successStatuses);
 				if (item != null) {
 					result.add(item);
 				}
@@ -158,27 +188,42 @@ public abstract class CloudExport<T> {
 				}
 			} while (hasNext);
 		} else if (Paged.class.isAssignableFrom(templateClass)) {
-			int total = 0;
-			int start = 0;
-			int size = 0;
 			boolean hasNext = false;
 			Map<String, Object> nextParameters = new HashMap<>();
 			nextParameters.putAll(queryParameters);
+			
+			// TODO Test paging
+			nextParameters.put(getLimitParameter(), 1);
+			
 			do {
 				T item = invokeRestCore(config, path, method, headers, nextParameters, data);
 				if (item != null) {
 					result.add(item);
 				}
 				Paged pagedItem = (Paged) item;
-				total = pagedItem.getTotal();
-				size = pagedItem.getSize();
-				start += size;
-				nextParameters.put(pagedItem.getStartParameterName(), start);
-				hasNext = (start > total);
-				if (hasNext) {
-					Log.debug(LOGGER, "More items");
+				int total = pagedItem.getPageTotal();
+				int size = pagedItem.getPageSize();
+				int startAt = pagedItem.getPageStartAt();
+				if (total != -1) {
+					if (startAt + size < total) {
+						nextParameters.put(getStartAtParameter(), startAt + size);
+						hasNext = true;
+						Log.debug(LOGGER, "More items");
+					} else {
+						hasNext = false;
+						Log.debug(LOGGER, "No more items");
+					}
 				} else {
-					Log.debug(LOGGER, "No more items");
+					// Some REST APIs return incorrect total which is equal to size. 
+					// So to be safe, total is set to -1, and one extra call is made
+					if (size != 0) {
+						nextParameters.put(getStartAtParameter(), startAt + size);
+						hasNext = true;
+						Log.debug(LOGGER, "More items");
+					} else {
+						hasNext = false;
+						Log.debug(LOGGER, "No more items");
+					}
 				}
 			} while (hasNext);			
 		} else {

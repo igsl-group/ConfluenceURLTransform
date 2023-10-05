@@ -13,29 +13,32 @@ import org.apache.commons.csv.CSVPrinter;
 
 import com.igsl.CSV;
 import com.igsl.config.Config;
-import com.igsl.export.cloud.model.ConfluencePage;
-import com.igsl.export.cloud.model.ConfluencePages;
+import com.igsl.export.cloud.model.JiraServiceDesk;
+import com.igsl.export.cloud.model.JiraServiceDesks;
 
-public class CloudConfluencePages extends BaseExport<ConfluencePages> {
+public class CloudJiraServiceDesks extends BaseExport<JiraServiceDesks> {
 
-	public CloudConfluencePages() {
-		super(ConfluencePages.class);
+	public CloudJiraServiceDesks() {
+		super(JiraServiceDesks.class);
 	}
-
+	
 	@Override
 	public Path exportObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
-		query.put("body-format", "storage");
-		List<ConfluencePages> result = invokeRest(config, "/wiki/api/v2/pages", HttpMethod.GET, header, query, null);
+		List<JiraServiceDesks> result = invokeRest(config, 
+				"/rest/servicedeskapi/servicedesk", HttpMethod.GET, header, query, null);
 		Path p = getOutputPath(config);
 		try (	FileWriter fw = new FileWriter(p.toFile());
 				CSVPrinter printer = new CSVPrinter(fw, CSV.getCSVFormat())) {
-			CSV.printRecord(printer, "ID", "TITLE", "SPACEID");
-			for (ConfluencePages pages : result) {
-				for (ConfluencePage page : pages.getResults()) {
+			CSV.printRecord(printer, "ID", "PROJECTID", "PROJECTNAME", "PROJECTKEY");
+			for (JiraServiceDesks desks : result) {
+				for (JiraServiceDesk desk : desks.getValues()) {
 					CSV.printRecord(printer, 
-							page.getId(), page.getTitle(), page.getSpaceId());
+							desk.getId(),
+							desk.getProjectId(),
+							desk.getProjectName(),
+							desk.getProjectKey());
 				}
 			}
 		}
@@ -49,7 +52,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 
 	@Override
 	public String getStartAtParameter() {
-		return "startAt";
+		return "start";
 	}
 
 }

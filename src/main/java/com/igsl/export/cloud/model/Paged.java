@@ -8,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public interface Paged {
 	@JsonIgnore
-	public int getTotal();
+	public abstract int getPageTotal();
 	@JsonIgnore
-	public int getSize();
+	public abstract int getPageSize();
 	@JsonIgnore
-	public String getStartParameterName();
+	public abstract int getPageStartAt();
 }
