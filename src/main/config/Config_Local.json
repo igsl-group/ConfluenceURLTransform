@@ -5,7 +5,18 @@
         "apiToken": null,
         "handlers": [
             "com.igsl.export.cloud.CloudConfluenceSpaces",
-            "com.igsl.export.cloud.CloudConfluencePages"
+            "com.igsl.export.cloud.CloudConfluencePages",
+            "com.igsl.export.cloud.CloudConfluenceUsers",
+            "com.igsl.export.cloud.CloudJiraAttachments",
+            "com.igsl.export.cloud.CloudJiraServiceDesks",
+            "com.igsl.export.cloud.CloudJiraDashboards",
+            "com.igsl.export.cloud.CloudJiraFieldConfigurations",
+            "com.igsl.export.cloud.CloudJiraFilters",
+            "com.igsl.export.cloud.CloudJiraIssueTypes",
+            "com.igsl.export.cloud.CloudJiraProjects",
+            "com.igsl.export.cloud.CloudJiraProjectCategories",
+            "com.igsl.export.cloud.CloudJiraBoards",
+            "com.igsl.export.cloud.CloudJiraSLAs"
         ]
     },
     "connections": {
