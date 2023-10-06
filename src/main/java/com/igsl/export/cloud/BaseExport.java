@@ -1,5 +1,6 @@
 package com.igsl.export.cloud;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -21,18 +22,20 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.igsl.CSV;
 import com.igsl.Log;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.Linked;
@@ -44,6 +47,7 @@ public abstract class BaseExport<T> {
 	public static final String ENCODDING = "ASCII";	
 	private static final ObjectMapper OM = new ObjectMapper()
 			.enable(SerializationFeature.INDENT_OUTPUT)
+			.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 	protected static final JacksonJsonProvider JACKSON_JSON_PROVIDER = 
 			new JacksonJaxbJsonProvider()
@@ -72,7 +76,7 @@ public abstract class BaseExport<T> {
 		return result;
 	}
 	
-	protected T invokeRestCore(
+	protected List<T> invokeRestCore(
 			Config config, 
 			String path, 
 			String method, 
@@ -80,7 +84,7 @@ public abstract class BaseExport<T> {
 			Map<String, Object> queryParameters, 
 			Object data,
 			int... successStatuses) throws Exception {
-		T result = null;
+		List<T> result = new ArrayList<>();
 		Client client = ClientBuilder.newClient();
 		client.register(JACKSON_JSON_PROVIDER);
 		URI uri = new URI(SCHEME + config.getCloud().getDomain()).resolve(path);
@@ -141,9 +145,11 @@ public abstract class BaseExport<T> {
 		Log.debug(LOGGER, uri.toASCIIString() + " body = " + body);
 		if (success) {
 			ObjectReader reader = OM.readerFor(templateClass);
-			result = reader.readValue(body);
-			ObjectWriter writer = OM.writerFor(templateClass);
-			Log.debug(LOGGER, uri.toASCIIString() + " JSON = " + writer.writeValueAsString(result));
+			MappingIterator<T> it = reader.readValues(body);
+			while (it.hasNext()) {
+				result.add(it.next());
+			}
+			Log.debug(LOGGER, uri.toASCIIString() + " JSON = " + OM.writeValueAsString(result));
 			return result;
 		} else {
 			throw new Exception("HTTP Resposne: " + status + ", message: " + body);
@@ -169,22 +175,24 @@ public abstract class BaseExport<T> {
 			nextParameters.put(getLimitParameter(), 1);
 			
 			do {
-				T item = invokeRestCore(config, path, method, headers, nextParameters, data, successStatuses);
-				if (item != null) {
-					result.add(item);
+				List<T> items = invokeRestCore(config, path, method, headers, nextParameters, data, successStatuses);
+				if (items != null) {
+					result.addAll(items);
 				}
-				Linked linkedItem = (Linked) item;
-				Map<String, Object> linkedParameters = linkedItem.getNext();
-				if (linkedParameters != null) {
-					hasNext = true;
-					Log.debug(LOGGER, "More items");
-					for (Map.Entry<String, Object> entry : linkedParameters.entrySet()) {
-						Log.debug(LOGGER, "entry: " + entry.getKey() + " = " + entry.getValue());
+				for (T item : items) {
+					Linked linkedItem = (Linked) item;
+					Map<String, Object> linkedParameters = linkedItem.getNext();
+					if (linkedParameters != null) {
+						hasNext = true;
+						Log.debug(LOGGER, "More items");
+						for (Map.Entry<String, Object> entry : linkedParameters.entrySet()) {
+							Log.debug(LOGGER, "entry: " + entry.getKey() + " = " + entry.getValue());
+						}
+						nextParameters.putAll(linkedParameters);
+					} else {
+						Log.debug(LOGGER, "No more items");
+						hasNext = false;
 					}
-					nextParameters.putAll(linkedParameters);
-				} else {
-					Log.debug(LOGGER, "No more items");
-					hasNext = false;
 				}
 			} while (hasNext);
 		} else if (Paged.class.isAssignableFrom(templateClass)) {
@@ -196,40 +204,42 @@ public abstract class BaseExport<T> {
 			nextParameters.put(getLimitParameter(), 1);
 			
 			do {
-				T item = invokeRestCore(config, path, method, headers, nextParameters, data);
-				if (item != null) {
-					result.add(item);
+				List<T> items = invokeRestCore(config, path, method, headers, nextParameters, data);
+				if (items != null) {
+					result.addAll(items);
 				}
-				Paged pagedItem = (Paged) item;
-				int total = pagedItem.getPageTotal();
-				int size = pagedItem.getPageSize();
-				int startAt = pagedItem.getPageStartAt();
-				if (total != -1) {
-					if (startAt + size < total) {
-						nextParameters.put(getStartAtParameter(), startAt + size);
-						hasNext = true;
-						Log.debug(LOGGER, "More items");
+				for (T item : items) {
+					Paged pagedItem = (Paged) item;
+					int total = pagedItem.getPageTotal();
+					int size = pagedItem.getPageSize();
+					int startAt = pagedItem.getPageStartAt();
+					if (total != -1) {
+						if (startAt + size < total) {
+							nextParameters.put(getStartAtParameter(), startAt + size);
+							hasNext = true;
+							Log.debug(LOGGER, "More items");
+						} else {
+							hasNext = false;
+							Log.debug(LOGGER, "No more items");
+						}
 					} else {
-						hasNext = false;
-						Log.debug(LOGGER, "No more items");
-					}
-				} else {
-					// Some REST APIs return incorrect total which is equal to size. 
-					// So to be safe, total is set to -1, and one extra call is made
-					if (size != 0) {
-						nextParameters.put(getStartAtParameter(), startAt + size);
-						hasNext = true;
-						Log.debug(LOGGER, "More items");
-					} else {
-						hasNext = false;
-						Log.debug(LOGGER, "No more items");
+						// Some REST APIs return incorrect total which is equal to size. 
+						// So to be safe, total is set to -1, and one extra call is made
+						if (size != 0) {
+							nextParameters.put(getStartAtParameter(), startAt + size);
+							hasNext = true;
+							Log.debug(LOGGER, "More items");
+						} else {
+							hasNext = false;
+							Log.debug(LOGGER, "No more items");
+						}
 					}
 				}
 			} while (hasNext);			
 		} else {
-			T item = invokeRestCore(config, path, method, headers, queryParameters, data);
-			if (item != null) {
-				result.add(item);
+			List<T> items = invokeRestCore(config, path, method, headers, queryParameters, data);
+			if (items != null) {
+				result.addAll(items);
 			}
 		}
 		return result;
@@ -239,5 +249,26 @@ public abstract class BaseExport<T> {
 		return Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), this.getClass().getSimpleName() + ".csv");
 	}
 	
-	public abstract Path exportObjects(Config config) throws Exception;
+	public Path exportObjects(Config config) throws Exception {
+		Path csvPath = getOutputPath(config);
+		List<String> headers = getCSVHeaders();
+		try (	FileWriter fw = new FileWriter(csvPath.toFile());
+				CSVPrinter printer = new CSVPrinter(fw, CSV.getCSVFormat())) {
+			CSV.printRecord(printer, headers);
+			List<T> objects = getObjects(config);
+			for (T obj : objects) {
+				List<List<Object>> rows = getRows(obj);
+				if (rows != null) {
+					for (List<Object> row : rows) {
+						CSV.printRecord(printer, row);
+					}
+				}
+			}
+		}
+		return csvPath;
+	}
+	
+	protected abstract List<String> getCSVHeaders();
+	protected abstract List<List<Object>> getRows(T obj);
+	public abstract List<T> getObjects(Config config) throws Exception;
 }

@@ -38,6 +38,10 @@ public class CSV {
 			.build();
 	}
 	
+	public static void printRecord(CSVPrinter printer, List<?> args) throws IOException {
+		printer.printRecord(args.toArray(new Object[0]));
+	}
+	
 	public static void printRecord(CSVPrinter printer, Object... args) throws IOException {
 		List<Object> newArgs = new ArrayList<>();
 		for (Object o : args) {

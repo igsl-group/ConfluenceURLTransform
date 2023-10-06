@@ -10,13 +10,12 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
 import com.igsl.config.Config;
-import com.igsl.export.cloud.model.ConfluenceSpace;
-import com.igsl.export.cloud.model.ConfluenceSpaces;
+import com.igsl.export.cloud.model.JiraIssueType;
 
-public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
+public class CloudJiraIssueTypes extends BaseExport<JiraIssueType> {
 
-	public CloudConfluenceSpaces() {
-		super(ConfluenceSpaces.class);
+	public CloudJiraIssueTypes() {
+		super(JiraIssueType.class);
 	}
 
 	@Override
@@ -31,23 +30,21 @@ public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
 
 	@Override
 	protected List<String> getCSVHeaders() {
-		return Arrays.asList("ID", "KEY", "NAME");
+		return Arrays.asList("ID", "NAME", "DESCRIPTION");
 	}
 
 	@Override
-	protected List<List<Object>> getRows(ConfluenceSpaces obj) {
+	protected List<List<Object>> getRows(JiraIssueType obj) {
 		List<List<Object>> result = new ArrayList<>();
-		for (ConfluenceSpace space : obj.getResults()) {
-			result.add(Arrays.asList(space.getId(), space.getKey(), space.getName()));
-		}
+		result.add(Arrays.asList(obj.getId(), obj.getName(), obj.getDescription()));
 		return result;
 	}
 
 	@Override
-	public List<ConfluenceSpaces> getObjects(Config config) throws Exception {
+	public List<JiraIssueType> getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
-		List<ConfluenceSpaces> result = invokeRest(config, "/wiki/api/v2/spaces", HttpMethod.GET, header, query, null);
+		List<JiraIssueType> result = invokeRest(config, "/rest/api/3/issuetype", HttpMethod.GET, header, query, null);
 		return result;
 	}
 

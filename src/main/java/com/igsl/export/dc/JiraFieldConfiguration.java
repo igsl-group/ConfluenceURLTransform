@@ -11,7 +11,7 @@ import org.apache.commons.csv.CSVPrinter;
 import com.igsl.CSV;
 import com.igsl.config.Config;
 
-public class JiraFIeldLayout extends ObjectExport {
+public class JiraFieldConfiguration extends ObjectExport {
 
 	private static final String SQL = "SELECT ID, NAME from FIELDLAYOUT";
 	
