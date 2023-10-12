@@ -9,13 +9,32 @@ import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.JiraAttachment;
 import com.igsl.export.cloud.model.JiraIssue;
 import com.igsl.export.cloud.model.JiraIssues;
+import com.igsl.export.dc.ObjectExport;
 
 public class CloudJiraAttachments extends BaseExport<JiraIssues> {
 
+	public static final String COL_ATTACHMENTID = "ATTACHMENTID";
+	public static final String COL_FILENAME = "FILENAME";
+	public static final String COL_MIMETYPE = "MIMETYPE"; 
+	public static final String COL_SIZE = "SIZE";
+	public static final String COL_AUTHORDISPLAYNAME = "AUTHOR_DISPLAYNAME";
+	public static final String COL_AUTHORACCOUNTID = "AUTHOR_ACCOUNTID";
+	public static final String COL_AUTHORNAME = "AUTHOR_NAME";
+	public static final List<String> COL_LIST = 
+			Arrays.asList(
+				COL_ATTACHMENTID,
+				COL_FILENAME,
+				COL_MIMETYPE,
+				COL_SIZE,
+				COL_AUTHORDISPLAYNAME,
+				COL_AUTHORACCOUNTID,
+				COL_AUTHORNAME);
+	
 	public CloudJiraAttachments() {
 		super(JiraIssues.class);
 	}
@@ -32,31 +51,25 @@ public class CloudJiraAttachments extends BaseExport<JiraIssues> {
 
 	@Override
 	protected List<String> getCSVHeaders() {
-		return Arrays.asList(
-				"ATTACHMENTID", 
-				"FILENAME", 
-				"MIMETYPE", 
-				"SIZE", 
-				"AUTHOR_DISPLAYNAME",
-				"AUTHOR_ACCOUNTID",
-				"AUTHOR_NAME"
-				);
+		return COL_LIST;
 	}
 
 	@Override
-	protected List<List<Object>> getRows(JiraIssues obj) {
-		List<List<Object>> result = new ArrayList<>();
+	protected List<ObjectData> getCSVRows(JiraIssues obj) {
+		List<ObjectData> result = new ArrayList<>();
 		for (JiraIssue issue : obj.getIssues()) {
 			if (issue.getFields().getAttachment() != null) {
 				for (JiraAttachment attachment : issue.getFields().getAttachment()) {
-					result.add(Arrays.asList(
+					List<String> list = Arrays.asList(
 							attachment.getId(),
 							attachment.getFilename(),
 							attachment.getMimeType(),
-							attachment.getSize(),
+							Long.toString(attachment.getSize()),
 							attachment.getAuthor().getDisplayName(),
 							attachment.getAuthor().getAccountId(),
-							attachment.getAuthor().getName()));
+							attachment.getAuthor().getName());
+					String uniqueKey = ObjectData.createUniqueKey(issue.getKey(), attachment.getFilename());
+					result.add(new ObjectData(attachment.getId(), uniqueKey, list));
 				}
 			}
 		}
@@ -70,6 +83,11 @@ public class CloudJiraAttachments extends BaseExport<JiraIssues> {
 		query.put("fields", "attachment");
 		List<JiraIssues> result = invokeRest(config, "/rest/api/3/search", HttpMethod.GET, header, query, null);
 		return result;
+	}
+
+	@Override
+	protected ObjectExport getObjectExport() {
+		return new com.igsl.export.dc.JiraAttachment();
 	}
 
 }

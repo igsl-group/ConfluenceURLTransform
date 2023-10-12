@@ -13,6 +13,7 @@ public class ConfluencePage {
 	private ConfluenceVersion version;
 	private ConfluenceBody body;
 	private ConfluenceLink _links;
+	private String spaceKey;
 	public String getId() {
 		return id;
 	}
@@ -84,5 +85,11 @@ public class ConfluencePage {
 	}
 	public void set_links(ConfluenceLink _links) {
 		this._links = _links;
+	}
+	public String getSpaceKey() {
+		return spaceKey;
+	}
+	public void setSpaceKey(String spaceKey) {
+		this.spaceKey = spaceKey;
 	}
 }

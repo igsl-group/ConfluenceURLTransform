@@ -14,6 +14,8 @@ public class Config {
 	private ObjectExport dcExport;
 	@JsonIgnore
 	private Path outputDirectory;
+	@JsonIgnore
+	private Path dcExportDirectory;	
 	public void validate() throws Exception {
 		List<String> messages = new ArrayList<>();
 		if (connections != null) {
@@ -68,5 +70,11 @@ public class Config {
 	}
 	public void setDcExport(ObjectExport dcExport) {
 		this.dcExport = dcExport;
+	}
+	public Path getDcExportDirectory() {
+		return dcExportDirectory;
+	}
+	public void setDcExportDirectory(Path dcExportDirectory) {
+		this.dcExportDirectory = dcExportDirectory;
 	}
 }

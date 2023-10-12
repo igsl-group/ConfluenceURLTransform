@@ -9,14 +9,21 @@ import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.JiraSLA;
 import com.igsl.export.cloud.model.JiraSLAs;
 import com.igsl.export.cloud.model.JiraServiceDesk;
 import com.igsl.export.cloud.model.JiraServiceDesks;
+import com.igsl.export.dc.ObjectExport;
 
 public class CloudJiraSLAs extends BaseExport<JiraSLAs> {
 
+	public static final String COL_ID = "ID";
+	public static final String COL_PROJECTKEY = "PROJECTKEY";
+	public static final String COL_NAME = "NAME";
+	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_PROJECTKEY, COL_NAME);
+	
 	public CloudJiraSLAs() {
 		super(JiraSLAs.class);
 	}
@@ -33,14 +40,16 @@ public class CloudJiraSLAs extends BaseExport<JiraSLAs> {
 
 	@Override
 	protected List<String> getCSVHeaders() {
-		return Arrays.asList("ID", "PROJECTKEY", "NAME");
+		return COL_LIST;
 	}
 
 	@Override
-	protected List<List<Object>> getRows(JiraSLAs obj) {
-		List<List<Object>> result = new ArrayList<>();
+	protected List<ObjectData> getCSVRows(JiraSLAs obj) {
+		List<ObjectData> result = new ArrayList<>();
 		for (JiraSLA sla : obj.getTimeMetrics()) {
-			result.add(Arrays.asList(sla.getId(), sla.getProjectKey(), sla.getName()));
+			List<String> list = Arrays.asList(sla.getId(), sla.getProjectKey(), sla.getName());
+			String uniqueKey = ObjectData.createUniqueKey(sla.getProjectKey(), sla.getName());
+			result.add(new ObjectData(sla.getId(), uniqueKey, list));
 		}
 		return result;
 	}
@@ -61,6 +70,11 @@ public class CloudJiraSLAs extends BaseExport<JiraSLAs> {
 			}
 		}
 		return result;
+	}
+
+	@Override
+	protected ObjectExport getObjectExport() {
+		return new com.igsl.export.dc.JiraSLA();
 	}
 
 }

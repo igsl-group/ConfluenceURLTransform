@@ -9,12 +9,19 @@ import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.ConfluenceSpace;
 import com.igsl.export.cloud.model.ConfluenceSpaces;
+import com.igsl.export.dc.ObjectExport;
 
 public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
 
+	public static final String COL_ID = "ID";
+	public static final String COL_KEY = "KEY";
+	public static final String COL_NAME = "NAME";
+	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_KEY, COL_NAME);
+	
 	public CloudConfluenceSpaces() {
 		super(ConfluenceSpaces.class);
 	}
@@ -31,14 +38,15 @@ public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
 
 	@Override
 	protected List<String> getCSVHeaders() {
-		return Arrays.asList("ID", "KEY", "NAME");
+		return COL_LIST;
 	}
 
 	@Override
-	protected List<List<Object>> getRows(ConfluenceSpaces obj) {
-		List<List<Object>> result = new ArrayList<>();
+	protected List<ObjectData> getCSVRows(ConfluenceSpaces obj) {
+		List<ObjectData> result = new ArrayList<>();
 		for (ConfluenceSpace space : obj.getResults()) {
-			result.add(Arrays.asList(space.getId(), space.getKey(), space.getName()));
+			List<String> list = Arrays.asList(space.getId(), space.getKey(), space.getName());
+			result.add(new ObjectData(space.getId(), space.getKey(), list));
 		}
 		return result;
 	}
@@ -49,6 +57,11 @@ public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
 		Map<String, Object> query = new HashMap<>();
 		List<ConfluenceSpaces> result = invokeRest(config, "/wiki/api/v2/spaces", HttpMethod.GET, header, query, null);
 		return result;
+	}
+
+	@Override
+	protected ObjectExport getObjectExport() {
+		return new com.igsl.export.dc.ConfluenceSpace();
 	}
 
 }

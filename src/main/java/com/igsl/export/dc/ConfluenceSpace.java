@@ -8,17 +8,16 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
-public class JiraRapidBoard extends ObjectExport {
+public class ConfluenceSpace extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT rv.ID AS BOARDID, rv.NAME AS BOARDNAME " + 
-			"FROM AO_60DB71_RAPIDVIEW rv";
-	public static final String COL_BOARDID = "BOARDID";
-	public static final String COL_BORADNAME = "BOARDNAME";
-	public static final List<String> COL_LIST = Arrays.asList(COL_BOARDID, COL_BORADNAME);
+	private static final String SQL = "SELECT SPACEID, SPACENAME, SPACEKEY FROM SPACES";
+	public static final String COL_SPACEID = "SPACEID";
+	public static final String COL_SPACENAME = "SPACENAME";
+	public static final String COL_SPACEKEY = "SPACEKEY";
+	public static final List<String> COL_LIST = Arrays.asList(COL_SPACEID, COL_SPACENAME, COL_SPACEKEY);
 	
-	private PreparedStatement ps;
 	private ResultSet rs;
+	private PreparedStatement ps;
 	
 	@Override
 	public List<String> getHeaders() {
@@ -27,7 +26,7 @@ public class JiraRapidBoard extends ObjectExport {
 
 	@Override
 	public void startGetObjects() throws Exception {
-		Connection conn = config.getConnections().getJiraConnection();
+		Connection conn = config.getConnections().getConfluenceConnection();
 		ps = conn.prepareStatement(SQL);
 		rs = ps.executeQuery();
 	}
@@ -35,9 +34,10 @@ public class JiraRapidBoard extends ObjectExport {
 	@Override
 	public List<String> getNextObject() throws Exception {
 		if (rs.next()) {
-			String boardId = rs.getString(1);
-			String boardName = rs.getString(2);
-			return Arrays.asList(boardId, boardName);
+			String pageId = rs.getString(1);
+			String pageName = rs.getString(2);
+			String spaceKey = rs.getString(3);
+			return Arrays.asList(pageId, pageName, spaceKey);
 		}
 		return null;
 	}
@@ -50,13 +50,13 @@ public class JiraRapidBoard extends ObjectExport {
 
 	@Override
 	protected String getObjectKey(CSVRecord r) throws Exception {
-		String boardName = r.get(COL_BORADNAME);
-		return boardName;
+		String spaceKey = r.get(COL_SPACEKEY);
+		return spaceKey;
 	}
 
 	@Override
 	protected String getObjectId(CSVRecord r) throws Exception {
-		String boardId = r.get(COL_BOARDID);
-		return boardId;
+		String pageId = r.get(COL_SPACEID);
+		return pageId;
 	}
 }

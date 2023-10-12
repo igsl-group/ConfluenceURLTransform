@@ -1,43 +1,66 @@
 package com.igsl.export.dc;
 
-import java.io.FileWriter;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.List;
 
-import org.apache.commons.csv.CSVPrinter;
-
-import com.igsl.CSV;
-import com.igsl.config.Config;
+import org.apache.commons.csv.CSVRecord;
 
 public class JiraFilter extends ObjectExport {
 
 	private static final String SQL = 
 			"SELECT id, filtername, description, authorname, groupname, projectid, reqcontent FROM searchrequest";
+	public static final String COL_ID = "ID";
+	public static final String COL_FILTERNAME = "FILTERNAME";
+	public static final String COL_DESCRIPTION = "DESCRIPTION";
+	public static final String COL_CONTENT = "CONTENT";
+	public static final List<String> COL_LIST = Arrays.asList(
+			COL_ID, COL_FILTERNAME, COL_DESCRIPTION, COL_CONTENT);
 	
+	private PreparedStatement ps;
+	private ResultSet rs;
+
 	@Override
-	public Path exportObjects(Config config) throws Exception {
-		Connection conn = config.getConnections().getJiraConnection();
-		Path p = getOutputPath(config);
-		try (	FileWriter fw = new FileWriter(p.toFile(), false);
-				CSVPrinter printer = new CSVPrinter(fw, CSV.getCSVFormat());
-				PreparedStatement ps = conn.prepareStatement(SQL)) {
-			CSV.printRecord(printer, "ID", "FILTERNAME", "DESCRIPTION", "AUTHOR", "GROUP", "PROJECT", "CONTENT");
-			try (ResultSet rs = ps.executeQuery()) {
-				while (rs.next()) {
-					String id = rs.getString(1);
-					String filterName = rs.getString(2);
-					String description = rs.getString(3);
-					String authorName = rs.getString(4);
-					String groupName = rs.getString(5);
-					String projectId = rs.getString(6);
-					String content = rs.getString(7);
-					CSV.printRecord(printer, id, filterName, description, authorName, groupName, projectId, content);
-				}
-			}
-		}
-		return p;
+	public List<String> getHeaders() {
+		return COL_LIST;
 	}
 
+	@Override
+	public void startGetObjects() throws Exception {
+		Connection conn = config.getConnections().getJiraConnection();
+		ps = conn.prepareStatement(SQL);
+		rs = ps.executeQuery();
+	}
+
+	@Override
+	public List<String> getNextObject() throws Exception {
+		if (rs.next()) {
+			String id = rs.getString(1);
+			String filterName = rs.getString(2);
+			String description = rs.getString(3);
+			String content = rs.getString(4);
+			return Arrays.asList(id, filterName, description, content);
+		}
+		return null;
+	}
+
+	@Override
+	public void stopGetObjects() throws Exception {
+		close(rs);
+		close(ps);
+	}
+
+	@Override
+	protected String getObjectKey(CSVRecord r) throws Exception {
+		String filterName = r.get(COL_FILTERNAME);
+		return filterName;
+	}
+
+	@Override
+	protected String getObjectId(CSVRecord r) throws Exception {
+		String id = r.get(COL_ID);
+		return id;
+	}
 }

@@ -9,13 +9,22 @@ import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.ConfluenceSearchResult;
 import com.igsl.export.cloud.model.ConfluenceUser;
 import com.igsl.export.cloud.model.ConfluenceUsers;
+import com.igsl.export.dc.ObjectExport;
 
 public class CloudConfluenceUsers extends BaseExport<ConfluenceUsers> {
 
+	public static final String COL_ACCOUNTID = "ACCOUNTID";
+	public static final String COL_EMAIL = "EMAIL";
+	public static final String COL_DISPLAYNAME = "DISPLAYNAME";
+	public static final String COL_PUBLICNAME = "PUBLICNAME";
+	public static final List<String> COL_LIST = 
+			Arrays.asList(COL_ACCOUNTID, COL_EMAIL, COL_DISPLAYNAME, COL_PUBLICNAME);
+	
 	public CloudConfluenceUsers() {
 		super(ConfluenceUsers.class);
 	}
@@ -32,17 +41,17 @@ public class CloudConfluenceUsers extends BaseExport<ConfluenceUsers> {
 
 	@Override
 	protected List<String> getCSVHeaders() {
-		return Arrays.asList("ACCOUNTID", "EMAIL", "DISPLAYNAME", "PUBLICNAME");
+		return COL_LIST;
 	}
 
 	@Override
-	protected List<List<Object>> getRows(ConfluenceUsers obj) {
-		List<List<Object>> result = new ArrayList<>();
+	protected List<ObjectData> getCSVRows(ConfluenceUsers obj) {
+		List<ObjectData> result = new ArrayList<>();
 		for (ConfluenceSearchResult r : obj.getResults()) {
 			ConfluenceUser user = r.getUser();
-			result.add(Arrays.asList(
-					user.getAccountId(), user.getEmail(), user.getDisplayName(), user.getPublicName()
-					));
+			List<String> list = Arrays.asList(
+					user.getAccountId(), user.getEmail(), user.getDisplayName(), user.getPublicName());
+			result.add(new ObjectData(user.getAccountId(), user.getDisplayName(), list));
 		}
 		return result;
 	}
@@ -54,6 +63,11 @@ public class CloudConfluenceUsers extends BaseExport<ConfluenceUsers> {
 		query.put("cql", "type=user");
 		List<ConfluenceUsers> result = invokeRest(config, "/wiki/rest/api/search/user", HttpMethod.GET, header, query, null);
 		return result;
+	}
+
+	@Override
+	protected ObjectExport getObjectExport() {
+		return new com.igsl.export.dc.ConfluenceUser();
 	}
 
 }

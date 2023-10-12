@@ -9,12 +9,25 @@ import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.JiraProject;
 import com.igsl.export.cloud.model.JiraProjects;
+import com.igsl.export.dc.ObjectExport;
 
 public class CloudJiraProjects extends BaseExport<JiraProjects> {
 
+	public static final String COL_ID = "ID";
+	public static final String COL_KEY = "KEY";
+	public static final String COL_NAME = "NAME";
+	public static final String COL_DESCRIPTION = "DESCRIPTION";
+	public static final List<String> COL_LIST = Arrays.asList(
+				COL_ID,
+				COL_KEY,
+				COL_NAME,
+				COL_DESCRIPTION
+			);
+	
 	public CloudJiraProjects() {
 		super(JiraProjects.class);
 	}
@@ -31,14 +44,16 @@ public class CloudJiraProjects extends BaseExport<JiraProjects> {
 
 	@Override
 	protected List<String> getCSVHeaders() {
-		return Arrays.asList("ID", "KEY", "NAME", "DESCRIPTION");
+		return COL_LIST;
 	}
 
 	@Override
-	protected List<List<Object>> getRows(JiraProjects obj) {
-		List<List<Object>> result = new ArrayList<>();
+	protected List<ObjectData> getCSVRows(JiraProjects obj) {
+		List<ObjectData> result = new ArrayList<>();
 		for (JiraProject project : obj.getValues()) {
-			result.add(Arrays.asList(project.getId(), project.getKey(), project.getName(), project.getDescription()));
+			List<String> list = Arrays.asList(
+					project.getId(), project.getKey(), project.getName(), project.getDescription());
+			result.add(new ObjectData(project.getId(), project.getKey(), list));
 		}
 		return result;
 	}
@@ -49,6 +64,11 @@ public class CloudJiraProjects extends BaseExport<JiraProjects> {
 		Map<String, Object> query = new HashMap<>();
 		List<JiraProjects> result = invokeRest(config, "/rest/api/3/project/search", HttpMethod.GET, header, query, null);
 		return result;
+	}
+
+	@Override
+	protected ObjectExport getObjectExport() {
+		return new com.igsl.export.dc.JiraProject();
 	}
 
 }

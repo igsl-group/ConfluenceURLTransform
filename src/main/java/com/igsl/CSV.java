@@ -30,11 +30,12 @@ import org.apache.commons.csv.QuoteMode;
 public class CSV {
 	private static final Pattern INVALID_START_CHAR = Pattern.compile("^[=+\\-@\\t\\r\\n]+(.*)");
 	
-	public static CSVFormat getCSVFormat() {
+	public static CSVFormat getCSVFormat(List<String> headers) {
 		CSVFormat fmt = CSVFormat.EXCEL;
 		return fmt.builder()
 			.setDelimiter(",")
 			.setQuoteMode(QuoteMode.ALL)
+			.setHeader(headers.toArray(new String[0]))
 			.build();
 	}
 	

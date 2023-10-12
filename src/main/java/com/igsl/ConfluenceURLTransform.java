@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -23,8 +24,11 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.BaseExport;
 import com.igsl.export.dc.ObjectExport;
@@ -34,7 +38,7 @@ import com.igsl.handler.HandlerResult;
 public class ConfluenceURLTransform {
 	private static final Logger LOGGER = LogManager.getLogger(ConfluenceURLTransform.class);
 	
-	private static final String COMMAND_TRANSFORM_URL = "urltransform";
+	private static final String COMMAND_TRANSFORM_URL = "url";
 	private static final String COMMAND_DC_EXPORT = "dcexport";
 	private static final String COMMAND_CLOUD_EXPORT = "cloudexport";
 	
@@ -46,7 +50,9 @@ public class ConfluenceURLTransform {
 			"WHERE bc.BODY LIKE '%href=\"%'";
 	private static final String UPDATE = 
 			"UPDATE BODYCONTENT SET BODY = ? WHERE BODYCONTENTID = ?";
-	private static final ObjectMapper OM = new ObjectMapper();
+	private static final ObjectMapper OM_CONFIG = JsonMapper.builder()
+			.enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+			.build();
 	private static final Pattern URL_PATTERN = 
 			Pattern.compile("(<a\\s+(?:[^>]*?)?href\\s*=\\s*([\"']))(.*?)(\\2(?:[^>]*?)>(.*?)<\\/a>)");
 	// Capturing groups 1 + 3 + 4 forms the whole pattern
@@ -90,19 +96,19 @@ public class ConfluenceURLTransform {
 			String errorList = config.getOutputDirectory().resolve(OUTPUT_URL_ERRORS).toFile().getAbsolutePath();
 			String pageList = config.getOutputDirectory().resolve(OUTPUT_PAGE_POST_MIGRATE).toFile().getAbsolutePath();
 			try (
-					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSV.getCSVFormat());
-					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSV.getCSVFormat());
-					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSV.getCSVFormat());
-					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList), CSV.getCSVFormat());
+					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSV.getCSVFormat(
+							Arrays.asList("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO")));
+					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSV.getCSVFormat(
+							Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL")));
+					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSV.getCSVFormat(
+							Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER")));
+					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList), CSV.getCSVFormat(
+							Arrays.asList("SPACEKEY", "TITLE")));
 				) {
 				Log.info(LOGGER, "URLs updated will be written to: " + urlList);
 				Log.info(LOGGER, "URLs ignored will be written to: " + ignoreList);
 				Log.info(LOGGER, "Ignored URL list will be written to: " + errorList);
 				Log.info(LOGGER, "Page requiring post migrate will be written to: " +  pageList);
-				CSV.printRecord(urlPrinter, "POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO");
-				CSV.printRecord(ignorePrinter, "SPACEKEY", "TITLE", "BODYCONTENTID", "URL");
-				CSV.printRecord(errorPrinter, "SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER");
-				CSV.printRecord(pagePrinter, "SPACEKEY", "TITLE");
 				// Create handlers
 				List<Handler> handlers = new ArrayList<>();
 				for (String handlerName : config.getUrlTransform().getHandlers()) {
@@ -283,6 +289,12 @@ public class ConfluenceURLTransform {
 	}
 	
 	private static void exportCloudObjects(Config config) throws Exception {
+		String dcDir = Console.readLine("DC Export Directory: ");
+		Path dcPath = Paths.get(dcDir);
+		if (!Files.exists(dcPath) || !Files.isDirectory(dcPath)) {
+			throw new Exception("\"" + dcDir + "\" is not a valid directory");
+		}
+		config.setDcExportDirectory(dcPath);
 		List<BaseExport<?>> exporters = new ArrayList<>();
 		for (String exporterName : config.getCloud().getHandlers()) {
 			try {
@@ -295,8 +307,11 @@ public class ConfluenceURLTransform {
 		}
 		for (BaseExport<?> exporter : exporters) {
 			try {
-				Path p = exporter.exportObjects(config);
-				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());
+				Path[] p = exporter.exportObjects(config);
+				Log.info(LOGGER, 
+						exporter.getClass().getSimpleName() + ": objects written to " + p[0].toFile().getAbsolutePath());
+				Log.info(LOGGER, 
+						exporter.getClass().getSimpleName() + ": mappings written to " + p[1].toFile().getAbsolutePath());
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Error", ex);
 			}
@@ -316,7 +331,8 @@ public class ConfluenceURLTransform {
 		}
 		for (ObjectExport exporter : exporters) {
 			try {
-				Path p = exporter.exportObjects(config);
+				exporter.setConfig(config);
+				Path p = exporter.exportObjects();
 				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Error", ex);
@@ -327,11 +343,11 @@ public class ConfluenceURLTransform {
 	public static void main(String[] args) {
 		if (args.length == 0) {
 			Log.info(LOGGER, "Available Commands: " + 
-					COMMAND_CLOUD_EXPORT + " | " + 
 					COMMAND_DC_EXPORT + " | " + 
+					COMMAND_CLOUD_EXPORT + " | " + 
 					COMMAND_TRANSFORM_URL);
 			try {
-				String line = Console.readLine("Command: ");
+				String line = Console.readLine("Space-delimited Command(s): ");
 				if (line != null && !line.isBlank()) {
 					args = line.split("\\s");
 				}
@@ -368,7 +384,7 @@ public class ConfluenceURLTransform {
 		Connection jiraConn = null;
 		try {
 			// Read config
-			ObjectReader or = OM.readerFor(Config.class);
+			ObjectReader or = OM_CONFIG.readerFor(Config.class);
 			Config config = new Config();
 			try (InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream("Config.json")) {
 				config = or.readValue(in);
