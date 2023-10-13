@@ -16,6 +16,10 @@ public class Config {
 	private Path outputDirectory;
 	@JsonIgnore
 	private Path dcExportDirectory;	
+	@JsonIgnore
+	private Path cloudExportDirectory;
+	@JsonIgnore
+	private Path urlExportDirectory;
 	public void validate() throws Exception {
 		List<String> messages = new ArrayList<>();
 		if (connections != null) {
@@ -76,5 +80,17 @@ public class Config {
 	}
 	public void setDcExportDirectory(Path dcExportDirectory) {
 		this.dcExportDirectory = dcExportDirectory;
+	}
+	public Path getCloudExportDirectory() {
+		return cloudExportDirectory;
+	}
+	public void setCloudExportDirectory(Path cloudExportDirectory) {
+		this.cloudExportDirectory = cloudExportDirectory;
+	}
+	public Path getUrlExportDirectory() {
+		return urlExportDirectory;
+	}
+	public void setUrlExportDirectory(Path urlExportDirectory) {
+		this.urlExportDirectory = urlExportDirectory;
 	}
 }

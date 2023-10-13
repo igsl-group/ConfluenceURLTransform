@@ -96,13 +96,13 @@ public class ConfluenceURLTransform {
 			String errorList = config.getOutputDirectory().resolve(OUTPUT_URL_ERRORS).toFile().getAbsolutePath();
 			String pageList = config.getOutputDirectory().resolve(OUTPUT_PAGE_POST_MIGRATE).toFile().getAbsolutePath();
 			try (
-					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSV.getCSVFormat(
+					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSV.getCSVWriteFormat(
 							Arrays.asList("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO")));
-					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSV.getCSVFormat(
+					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSV.getCSVWriteFormat(
 							Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL")));
-					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSV.getCSVFormat(
+					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSV.getCSVWriteFormat(
 							Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER")));
-					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList), CSV.getCSVFormat(
+					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList), CSV.getCSVWriteFormat(
 							Arrays.asList("SPACEKEY", "TITLE")));
 				) {
 				Log.info(LOGGER, "URLs updated will be written to: " + urlList);
@@ -338,6 +338,30 @@ public class ConfluenceURLTransform {
 				Log.error(LOGGER, "Error", ex);
 			}
 		}
+	}
+	
+	private static void postMigrate(Config config) throws Exception {
+		String dcDir = Console.readLine("DC Export Directory: ");
+		Path dcPath = Paths.get(dcDir);
+		if (!Files.exists(dcPath) || !Files.isDirectory(dcPath)) {
+			throw new Exception("\"" + dcDir + "\" is not a valid directory");
+		}
+		config.setDcExportDirectory(dcPath);
+		String cloudDir = Console.readLine("Cloud Export Directory: ");
+		Path cloudPath = Paths.get(cloudDir);
+		if (!Files.exists(cloudPath) || !Files.isDirectory(cloudPath)) {
+			throw new Exception("\"" + cloudDir + "\" is not a valid directory");
+		}
+		config.setCloudExportDirectory(cloudPath);
+		String urlDir = Console.readLine("URL Export Directory: ");
+		Path urlPath = Paths.get(cloudDir);
+		if (!Files.exists(urlPath) || !Files.isDirectory(urlPath)) {
+			throw new Exception("\"" + urlDir + "\" is not a valid directory");
+		}
+		config.setUrlExportDirectory(urlPath);
+		// Read URL post migrate CSV
+		// Patch URLs
+		// Read mapping CSV as needed
 	}
 	
 	public static void main(String[] args) {

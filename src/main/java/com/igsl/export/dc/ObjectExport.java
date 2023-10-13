@@ -82,7 +82,7 @@ public abstract class ObjectExport {
 	public final Path exportObjects() throws Exception {
 		Path p = getOutputPath(config);
 		try (	FileWriter fw = new FileWriter(p.toFile());
-				CSVPrinter printer = new CSVPrinter(fw, CSV.getCSVFormat(getHeaders()))) {
+				CSVPrinter printer = new CSVPrinter(fw, CSV.getCSVWriteFormat(getHeaders()))) {
 			startGetObjects();
 			List<String> row = null;
 			do {
@@ -111,7 +111,7 @@ public abstract class ObjectExport {
 		Map<String, ObjectData> result = new HashMap<>();
 		Path p = getOutputPath(dir.toFile().getAbsolutePath());
 		try (	FileReader fr = new FileReader(p.toFile()); 
-				CSVParser parser = new CSVParser(fr, CSV.getCSVFormat(getHeaders()))) {
+				CSVParser parser = new CSVParser(fr, CSV.getCSVReadFormat())) {
 			Iterator<CSVRecord> it = parser.iterator();
 			while (it.hasNext()) {
 				CSVRecord r = it.next();

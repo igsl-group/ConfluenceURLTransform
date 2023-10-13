@@ -42,7 +42,6 @@ import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.Linked;
 import com.igsl.export.cloud.model.Paged;
-import com.igsl.export.dc.ConfluencePage;
 import com.igsl.export.dc.ObjectExport;
 
 public abstract class BaseExport<T> {
@@ -174,10 +173,6 @@ public abstract class BaseExport<T> {
 			boolean hasNext = false;
 			Map<String, Object> nextParameters = new HashMap<>();
 			nextParameters.putAll(queryParameters);
-			
-			// TODO Test paging
-			nextParameters.put(getLimitParameter(), 1);
-			
 			do {
 				List<T> items = invokeRestCore(config, path, method, headers, nextParameters, data, successStatuses);
 				if (items != null) {
@@ -203,10 +198,6 @@ public abstract class BaseExport<T> {
 			boolean hasNext = false;
 			Map<String, Object> nextParameters = new HashMap<>();
 			nextParameters.putAll(queryParameters);
-			
-			// TODO Test paging
-			nextParameters.put(getLimitParameter(), 1);
-			
 			do {
 				List<T> items = invokeRestCore(config, path, method, headers, nextParameters, data);
 				if (items != null) {
@@ -268,9 +259,9 @@ public abstract class BaseExport<T> {
 		Path mappingPath = getMappingPath(config);
 		List<String> headers = getCSVHeaders();
 		try (	FileWriter fwCSV = new FileWriter(csvPath.toFile());
-				CSVPrinter printerCSV = new CSVPrinter(fwCSV, CSV.getCSVFormat(headers));
+				CSVPrinter printerCSV = new CSVPrinter(fwCSV, CSV.getCSVWriteFormat(headers));
 				FileWriter fwMapping = new FileWriter(mappingPath.toFile());
-				CSVPrinter printerMapping = new CSVPrinter(fwMapping, CSV.getCSVFormat(Arrays.asList("DC", "CLOUD")))) {
+				CSVPrinter printerMapping = new CSVPrinter(fwMapping, CSV.getCSVWriteFormat(Arrays.asList("DC", "CLOUD")))) {
 			List<T> objects = getObjects(config);
 			for (T obj : objects) {
 				List<ObjectData> rows = getCSVRows(obj);
