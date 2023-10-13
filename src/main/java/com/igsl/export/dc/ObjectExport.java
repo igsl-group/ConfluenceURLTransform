@@ -37,7 +37,7 @@ public abstract class ObjectExport {
 		return Paths.get(dir, this.getClass().getSimpleName() + ".csv");
 	}
 	protected Path getOutputPath(Config config) throws IOException {
-		return Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), this.getClass().getSimpleName() + ".csv");
+		return getOutputPath(config.getOutputDirectory().toFile().getAbsolutePath());
 	}
 	
 	protected void close(Statement c) {

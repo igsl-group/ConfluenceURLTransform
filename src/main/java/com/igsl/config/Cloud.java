@@ -7,6 +7,7 @@ public class Cloud {
 	private String userName;
 	private String apiToken;
 	private List<String> handlers;
+	private List<String> postMigrateHandlers;
 	public String getDomain() {
 		return domain;
 	}
@@ -30,5 +31,11 @@ public class Cloud {
 	}
 	public void setHandlers(List<String> handlers) {
 		this.handlers = handlers;
+	}
+	public List<String> getPostMigrateHandlers() {
+		return postMigrateHandlers;
+	}
+	public void setPostMigrateHandlers(List<String> postMigrateHandlers) {
+		this.postMigrateHandlers = postMigrateHandlers;
 	}
 }

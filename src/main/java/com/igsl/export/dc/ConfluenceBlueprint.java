@@ -8,10 +8,10 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
-public class ConfluencePageTemplate extends ObjectExport {
+public class ConfluenceBlueprint extends ObjectExport {
 
 	private static final String SQL = 
-			"SELECT TEMPLATEID, TEMPLATENAME FROM PAGETEMPLATES WHERE PREVVER IS NULL AND REFMODULEKEY IS NULL";
+			"SELECT TEMPLATEID, TEMPLATENAME FROM PAGETEMPLATES WHERE PREVVER IS NULL AND REFMODULEKEY IS NOT NULL";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_NAME);

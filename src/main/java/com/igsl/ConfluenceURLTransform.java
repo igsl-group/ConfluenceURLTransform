@@ -1,5 +1,6 @@
 package com.igsl;
 
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,22 +16,29 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.BaseExport;
+import com.igsl.export.cloud.CloudConfluencePages;
+import com.igsl.export.cloud.CloudConfluenceSpaces;
+import com.igsl.export.cloud.model.ConfluencePage;
+import com.igsl.export.cloud.model.ConfluencePages;
 import com.igsl.export.dc.ObjectExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
@@ -41,6 +49,7 @@ public class ConfluenceURLTransform {
 	private static final String COMMAND_TRANSFORM_URL = "url";
 	private static final String COMMAND_DC_EXPORT = "dcexport";
 	private static final String COMMAND_CLOUD_EXPORT = "cloudexport";
+	private static final String COMMAND_POST_MIGRATE = "postMigrate";
 	
 	private static final String QUERY = 
 			"SELECT bc.BODYCONTENTID, bc.BODY, s.SPACEKEY, c.TITLE " + 
@@ -354,14 +363,138 @@ public class ConfluenceURLTransform {
 		}
 		config.setCloudExportDirectory(cloudPath);
 		String urlDir = Console.readLine("URL Export Directory: ");
-		Path urlPath = Paths.get(cloudDir);
+		Path urlPath = Paths.get(urlDir);
 		if (!Files.exists(urlPath) || !Files.isDirectory(urlPath)) {
 			throw new Exception("\"" + urlDir + "\" is not a valid directory");
 		}
 		config.setUrlExportDirectory(urlPath);
+		// Read spaces
+		CloudConfluenceSpaces spaces = new CloudConfluenceSpaces();
+		Map<String, String> spaceMapping = spaces.readCloudUniqueKeyToIdMapping(cloudPath);
 		// Read URL post migrate CSV
-		// Patch URLs
-		// Read mapping CSV as needed
+		Path postMigrateCSV = Paths.get(
+				config.getUrlExportDirectory().toFile().getAbsolutePath() , OUTPUT_PAGE_POST_MIGRATE);
+		// Initialize handlers
+		List<Handler> handlers = new ArrayList<>();
+		for (String handlerName : config.getCloud().getPostMigrateHandlers()) {
+			try {
+				Handler h = (Handler) Class.forName(handlerName)
+						.getDeclaredConstructor(Config.class).newInstance(config);
+				handlers.add(h);
+			} catch (Exception ex) {
+				Log.error(LOGGER, "Unable to create handler " + handlerName, ex);
+			}
+		}
+		// Output directory
+		Path outputDirectory = Paths.get(
+				System.getProperty("user.dir"), 
+				new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()));
+		if (!Files.exists(outputDirectory)) {
+			outputDirectory = Files.createDirectories(outputDirectory);
+		} 
+		if (!Files.isDirectory(outputDirectory)) {
+			throw new Exception("Output directory cannot be created");
+		}		
+		config.setOutputDirectory(outputDirectory);
+		// Output file
+		Path outputPath = Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), "Cloud URL Updated.csv");
+		// Process post migrate pages
+		try (	FileReader fr = new FileReader(postMigrateCSV.toFile()); 
+				FileWriter output = new FileWriter(outputPath.toFile()); 
+				CSVParser postMigrateList = new CSVParser(fr, CSV.getCSVReadFormat());
+				CSVPrinter outputPrinter = new CSVPrinter(output, CSV.getCSVWriteFormat(
+						Arrays.asList("SPACEKEY", "TITLE", "FROM", "TO", "ERROR", "HANDLER")))) {
+			CloudConfluencePages pages = new CloudConfluencePages();
+			// Read page content
+			for (CSVRecord r : postMigrateList.getRecords()) {
+				String spaceKey = r.get(0);
+				String spaceId = spaceMapping.get(spaceKey);
+				String title = r.get(1);
+				// Read page content
+				pages.setSpaceId(spaceId);
+				pages.setTitle(title);
+				List<ConfluencePages> pagesList = pages.getObjects(config);
+				if (pagesList.size() == 1 && pagesList.get(0).getResults().size() == 1) {
+					// Patch URLs
+					ConfluencePage page = pagesList.get(0).getResults().get(0);
+					String content = page.getBody().getStorage().getValue();
+					Log.debug(LOGGER, "Post migrate page in space " + spaceKey + "(" + spaceId + ") title " + title);
+					Log.debug(LOGGER, "Content: " + content);
+					// Parse content, find URL patterns
+					Matcher matcher = URL_PATTERN.matcher(content);
+					StringBuilder sb = new StringBuilder();
+					boolean changed = false;
+					while (matcher.find()) {
+						String tag = matcher.group(0);
+						String urlString = matcher.group(GROUP_HREF);
+						String urlText = matcher.group(GROUP_TEXT);
+						String handlerName = "N/A";
+						try {
+							String urlDecoded = StringEscapeUtils.unescapeHtml4(urlString);
+							URI uri = new URI(urlDecoded);
+							boolean accepted = false;
+							for (Handler handler : handlers) {
+								if (handler.accept(uri)) {
+									handlerName = handler.getClass().getCanonicalName();
+									HandlerResult hr = handler.handle(uri, urlText);
+									switch (hr.getResultType()) {
+									case ERROR:
+										CSV.printRecord(outputPrinter, spaceKey, title, urlString, "", hr.getErrorMessage(), handlerName);
+										break;
+									case TAG: 
+										accepted = true;
+										changed = true;
+										Log.debug(LOGGER, 
+												handler.getClass() + ": " + 
+												"From: [" + tag + "] " + 
+												"To: [" + hr.getTag() + "]");
+										// Replace the whole match
+										matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
+										CSV.printRecord(outputPrinter, spaceKey, title, tag, hr.getTag(), "", handlerName);
+										break;
+									case URI: 
+										accepted = true;
+										changed = true;
+										String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
+										Log.debug(LOGGER, 
+												handler.getClass() + ": " + 
+												"From URL: [" + urlString + "] " + 
+												"Decoded URL: [" + urlDecoded + "] " + 
+												"Path: [" + uri.getPath() + "] " + 
+												"Query: [" + uri.getQuery() + "] " + 
+												"To URL: [" + hr.getUri().toString() + "] " +  
+												"To Escaped URL: [" + resultUrl + "]");
+										// Replace URL only
+										matcher.appendReplacement(
+												sb, "$" + GROUP_BEFORE_HREF + 
+												Matcher.quoteReplacement(resultUrl) +
+												"$" + GROUP_AFTER_HREF);
+										CSV.printRecord(outputPrinter, 
+												spaceKey, title, urlString, resultUrl, "", handlerName);
+										break;
+									}
+									break;	// Stop after a handler accepts the URL
+								}
+							}
+							if (!accepted) {
+								CSV.printRecord(outputPrinter, spaceKey, title, urlString, urlString, "", "");
+							}
+						} catch (Exception ex) {
+							Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
+							CSV.printRecord(outputPrinter, spaceKey, title, urlString, "", ex.getMessage(), handlerName);
+						}
+					}	// While matcher.find
+					matcher.appendTail(sb);
+					if (changed) {
+						// TODO Perform update
+						Log.debug(LOGGER, spaceKey + " " + title + " from: " + content);
+						Log.debug(LOGGER, spaceKey + " " + title + " to: " + sb.toString());
+					}
+				} else {
+					Log.error(LOGGER, "Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);
+				}
+			}
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -369,7 +502,8 @@ public class ConfluenceURLTransform {
 			Log.info(LOGGER, "Available Commands: " + 
 					COMMAND_DC_EXPORT + " | " + 
 					COMMAND_CLOUD_EXPORT + " | " + 
-					COMMAND_TRANSFORM_URL);
+					COMMAND_TRANSFORM_URL + " | " + 
+					COMMAND_POST_MIGRATE);
 			try {
 				String line = Console.readLine("Space-delimited Command(s): ");
 				if (line != null && !line.isBlank()) {
@@ -389,6 +523,9 @@ public class ConfluenceURLTransform {
 		boolean needJiraDB = false;
 		for (String arg : args) {
 			switch (arg.toLowerCase().trim()) {
+			case COMMAND_POST_MIGRATE:
+				needApiToken = true;
+				break;
 			case COMMAND_CLOUD_EXPORT:
 				needApiToken = true;
 				break;
@@ -473,6 +610,9 @@ public class ConfluenceURLTransform {
 			// Execute
 			for (String arg : args) {
 				switch (arg) {
+				case COMMAND_POST_MIGRATE:
+					postMigrate(config);
+					break;
 				case COMMAND_CLOUD_EXPORT:
 					exportCloudObjects(config);
 					break;

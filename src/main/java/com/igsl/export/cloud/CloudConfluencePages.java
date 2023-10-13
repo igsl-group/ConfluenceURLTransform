@@ -28,10 +28,13 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	public static final String COL_SPACEID = "SPACEID";
 	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_TITLE, COL_SPACEID);
 	
+	private String spaceId;
+	private String title;
+	
 	public CloudConfluencePages() {
 		super(ConfluencePages.class);
 	}
-
+	
 	@Override
 	public String getLimitParameter() {
 		return "limit";
@@ -63,6 +66,12 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("body-format", "storage");
+		if (spaceId != null) {
+			query.put("space-id", spaceId);
+		}
+		if (title != null) {
+			query.put("title", title);
+		}
 		List<ConfluencePages> result = invokeRest(config, "/wiki/api/v2/pages", HttpMethod.GET, header, query, null);
 		// Resolve spaceKey
 		CloudConfluenceSpaces spacesExport = new CloudConfluenceSpaces();
@@ -85,5 +94,21 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	@Override
 	protected ObjectExport getObjectExport() {
 		return new com.igsl.export.dc.ConfluencePage();
+	}
+
+	public String getSpaceId() {
+		return spaceId;
+	}
+
+	public void setSpaceId(String spaceId) {
+		this.spaceId = spaceId;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
 	}
 }
