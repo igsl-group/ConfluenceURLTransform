@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -29,11 +30,16 @@ import com.igsl.rest.RESTUtil;
 public abstract class BaseExport<T> {
 	private static final Logger LOGGER = LogManager.getLogger(BaseExport.class);	
 	
+	public static final String COL_NOTE = "NOTE";
+	public static final String NOTE_NO_MATCH = "No Match";
+	public static final String NOTE_MULTIPLE_MATCHES = "Multiple Matches";
+	public static final String NOTE_MATCHED = "Matched";
+	
 	public static final String COL_DCID = "DC_ID";
 	public static final String COL_DCKEY = "DC_KEY";
 	public static final String COL_CLOUDID = "CLOUD_ID";
 	public static final String COL_CLOUDKEY = "CLOUD_KEY";
-	public static final List<String> COL_MAPPING = Arrays.asList(COL_DCID, COL_DCKEY, COL_CLOUDID, COL_CLOUDKEY);
+	public static final List<String> COL_MAPPING = Arrays.asList(COL_NOTE, COL_DCID, COL_DCKEY, COL_CLOUDID, COL_CLOUDKEY);
 	
 	protected final Class<T> templateClass;
 	public BaseExport(Class<T> templateClass) {
@@ -125,7 +131,7 @@ public abstract class BaseExport<T> {
 		// TODO How to handle mapping duplicate keys... e.g. user display name
 		ObjectExport p = getObjectExport();
 		p.setConfig(config);
-		Map<String, ObjectData> dcData = p.readObjects(config.getDcExportDirectory());
+		List<ObjectData> dcData = p.readObjects(config.getDcExportDirectory());
 		Path csvPath = getOutputPath(config);
 		Path mappingPath = getMappingPath(config);
 		List<String> headers = getCSVHeaders();
@@ -137,23 +143,50 @@ public abstract class BaseExport<T> {
 			for (T obj : objects) {
 				List<ObjectData> rows = getCSVRows(obj);
 				if (rows != null) {
-					for (ObjectData row : rows) {
-						if (dcData.containsKey(row.getUniqueKey())) {
-							ObjectData dcObject = dcData.get(row.getUniqueKey());
-							dcObject.setMapped(true);
-							CSV.printRecord(printerMapping, 
-									dcObject.getId(), dcObject.getUniqueKey(), row.getId(), row.getUniqueKey());
-						} else {
-							CSV.printRecord(printerMapping, "", "", row.getId(), row.getUniqueKey());
+					for (ObjectData cloudItem : rows) {
+						List<ObjectData> matchesFound = new ArrayList<>();
+						for (ObjectData dcItem : dcData) {
+							if (dcItem.getUniqueKey().equals(cloudItem.getUniqueKey())) {
+								matchesFound.add(dcItem);
+								dcItem.setMapped(true);
+								cloudItem.setMapped(true);
+							}
 						}
-						CSV.printRecord(printerCSV, row);
+						switch (matchesFound.size()) {
+						case 0:
+							// No match found
+							CSV.printRecord(printerMapping, 
+									NOTE_NO_MATCH, 
+									"", "", 
+									cloudItem.getId(), cloudItem.getUniqueKey());
+							break;
+						case 1:
+							// Single match found
+							ObjectData dcItem = matchesFound.get(0);
+							CSV.printRecord(printerMapping, 
+									NOTE_MATCHED, 
+									dcItem.getId(), dcItem.getUniqueKey(), 
+									cloudItem.getId(), cloudItem.getUniqueKey());
+							break;
+						default:
+							// Multiple matches found
+							CSV.printRecord(printerMapping, 
+									NOTE_MULTIPLE_MATCHES, 
+									"", "", 
+									cloudItem.getId(), cloudItem.getUniqueKey());
+							break;
+						}
+						CSV.printRecord(printerCSV, cloudItem);
 					}
 				}
 			}
-			// Record unmapped DC items
-			for (ObjectData data : dcData.values()) {
+			// Add unmapped DC items
+			for (ObjectData data : dcData) {
 				if (!data.isMapped()) {
-					CSV.printRecord(printerMapping, data.getId(), data.getUniqueKey(), "", "");
+					CSV.printRecord(printerMapping, 
+							NOTE_NO_MATCH, 
+							data.getId(), data.getUniqueKey(),
+							"", ""); 
 				}
 			}
 		}

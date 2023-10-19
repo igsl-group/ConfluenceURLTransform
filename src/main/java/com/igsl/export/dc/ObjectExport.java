@@ -107,8 +107,8 @@ public abstract class ObjectExport {
 	 */
 	protected abstract String getObjectId(CSVRecord r) throws Exception;
 	
-	public final Map<String, ObjectData> readObjects(Path dir) throws Exception {
-		Map<String, ObjectData> result = new HashMap<>();
+	public final List<ObjectData> readObjects(Path dir) throws Exception {
+		List<ObjectData> result = new ArrayList<>();
 		Path p = getOutputPath(dir.toFile().getAbsolutePath());
 		try (	FileReader fr = new FileReader(p.toFile()); 
 				CSVParser parser = new CSVParser(fr, CSV.getCSVReadFormat())) {
@@ -122,11 +122,7 @@ public abstract class ObjectExport {
 				}
 				ObjectData od = new ObjectData(getObjectId(r), getObjectKey(r), list);
 				Log.debug(LOGGER, "ObjectData: " + od.toString());
-				if (!result.containsKey(od.getUniqueKey())) {
-					result.put(od.getUniqueKey(), od);
-				} else {
-					Log.error(LOGGER, "Key clash for " + this.getClass().getSimpleName() + ": " + od.toString());
-				}
+				result.add(od);
 			}
 		}
 		return result;
