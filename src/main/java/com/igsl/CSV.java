@@ -2,12 +2,17 @@ package com.igsl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 
 /**
@@ -50,6 +55,19 @@ public class CSV {
 	
 	public static void printRecord(CSVPrinter printer, List<?> args) throws IOException {
 		printer.printRecord(args.toArray(new Object[0]));
+	}
+	
+	public static Map<String, String> readMapping(CSVParser parser, String keyCol, String valueCol) throws IOException {
+		Map<String, String> result = new HashMap<>();
+		parser.forEach(new Consumer<CSVRecord>() {
+			@Override
+			public void accept(CSVRecord r) {
+				String key = r.get(keyCol);
+				String value = r.get(valueCol);
+				result.put(key, value);
+			}
+		});
+		return result;
 	}
 	
 	public static void printRecord(CSVPrinter printer, Object... args) throws IOException {

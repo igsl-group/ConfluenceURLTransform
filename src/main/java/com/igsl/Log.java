@@ -49,6 +49,6 @@ public class Log {
 	}
 
 	public static void fatal(Logger logger, String format, Object... args) {
-		logger.fatal(processArguments(args));
+		logger.fatal(format, processArguments(args));
 	}
 }

@@ -49,7 +49,7 @@ public class ConfluenceURLTransform {
 	private static final String COMMAND_TRANSFORM_URL = "url";
 	private static final String COMMAND_DC_EXPORT = "dcexport";
 	private static final String COMMAND_CLOUD_EXPORT = "cloudexport";
-	private static final String COMMAND_POST_MIGRATE = "postMigrate";
+	private static final String COMMAND_POST_MIGRATE = "postmigrate";
 	
 	private static final String QUERY = 
 			"SELECT bc.BODYCONTENTID, bc.BODY, s.SPACEKEY, c.TITLE " + 
@@ -385,17 +385,6 @@ public class ConfluenceURLTransform {
 				Log.error(LOGGER, "Unable to create handler " + handlerName, ex);
 			}
 		}
-		// Output directory
-		Path outputDirectory = Paths.get(
-				System.getProperty("user.dir"), 
-				new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()));
-		if (!Files.exists(outputDirectory)) {
-			outputDirectory = Files.createDirectories(outputDirectory);
-		} 
-		if (!Files.isDirectory(outputDirectory)) {
-			throw new Exception("Output directory cannot be created");
-		}		
-		config.setOutputDirectory(outputDirectory);
 		// Output file
 		Path outputPath = Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), "Cloud URL Updated.csv");
 		// Process post migrate pages
@@ -436,6 +425,7 @@ public class ConfluenceURLTransform {
 							for (Handler handler : handlers) {
 								if (handler.accept(uri)) {
 									handlerName = handler.getClass().getCanonicalName();
+									Log.debug(LOGGER, "Handler " + handlerName + " accepts " + urlString);
 									HandlerResult hr = handler.handle(uri, urlText);
 									switch (hr.getResultType()) {
 									case ERROR:
@@ -477,6 +467,7 @@ public class ConfluenceURLTransform {
 								}
 							}
 							if (!accepted) {
+								Log.debug(LOGGER, "No handlers accept " + urlString);
 								CSV.printRecord(outputPrinter, spaceKey, title, urlString, urlString, "", "");
 							}
 						} catch (Exception ex) {
@@ -609,7 +600,7 @@ public class ConfluenceURLTransform {
 			}
 			// Execute
 			for (String arg : args) {
-				switch (arg) {
+				switch (arg.toLowerCase().trim()) {
 				case COMMAND_POST_MIGRATE:
 					postMigrate(config);
 					break;

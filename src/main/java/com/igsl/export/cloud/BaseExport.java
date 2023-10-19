@@ -74,10 +74,10 @@ public abstract class BaseExport<T> {
 		return getOutputPath(config.getOutputDirectory().toFile().getAbsolutePath());
 	}
 	
-	protected Path getMappingPath(String dir) throws IOException {
+	public Path getMappingPath(String dir) throws IOException {
 		return Paths.get(dir, this.getClass().getSimpleName() + "_Mapping.csv");
 	}
-	protected Path getMappingPath(Config config) throws IOException {
+	public Path getMappingPath(Config config) throws IOException {
 		return getMappingPath(config.getOutputDirectory().toFile().getAbsolutePath());
 	}
 	
@@ -122,6 +122,7 @@ public abstract class BaseExport<T> {
 	}
 	
 	public Path[] exportObjects(Config config) throws Exception {
+		// TODO How to handle mapping duplicate keys... e.g. user display name
 		ObjectExport p = getObjectExport();
 		p.setConfig(config);
 		Map<String, ObjectData> dcData = p.readObjects(config.getDcExportDirectory());

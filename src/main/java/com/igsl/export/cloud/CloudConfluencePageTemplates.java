@@ -52,7 +52,11 @@ public class CloudConfluencePageTemplates extends BaseExport<ConfluencePageTempl
 	protected List<ObjectData> getCSVRows(ConfluencePageTemplates obj) {
 		List<ObjectData> result = new ArrayList<>();
 		for (ConfluencePageTemplate page : obj.getResults()) {
-			List<String> list = Arrays.asList(page.getTemplateId(), page.getName());
+			List<String> list = Arrays.asList(
+					page.getTemplateId(), page.getName(),
+					page.getDescription(), 
+					page.getReferencingBlueprint(),
+					page.getBody().getStorage().getValue());
 			String uniqueKey = page.getName();
 			result.add(new ObjectData(page.getTemplateId(), uniqueKey, list));
 		}
@@ -66,6 +70,18 @@ public class CloudConfluencePageTemplates extends BaseExport<ConfluencePageTempl
 		query.put("expand", "body");
 		List<ConfluencePageTemplates> result = invokeRest(
 				config, "/wiki/rest/api/template/page", HttpMethod.GET, header, query, null);
+		// Filter ConfluencePageTemaplte with non-empty referencingBlueprint
+		// Those are modified default blueprints
+		for (ConfluencePageTemplates templates : result) {
+			List<ConfluencePageTemplate> toRemove = new ArrayList<>();
+			for (ConfluencePageTemplate template : templates.getResults()) {
+				if (template.getReferencingBlueprint() != null && 
+					!template.getReferencingBlueprint().isBlank()) {
+					toRemove.add(template);
+				}
+			}
+			templates.getResults().removeAll(toRemove);
+		}
 		return result;
 	}
 

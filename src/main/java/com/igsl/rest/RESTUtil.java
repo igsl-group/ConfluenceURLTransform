@@ -184,6 +184,7 @@ public class RESTUtil {
 			boolean hasNext = false;
 			Map<String, Object> nextParameters = new HashMap<>();
 			nextParameters.putAll(queryParameters);
+			int startAt = 0;
 			do {
 				List<T> items = invokeRestCore(
 						templateClass, config, path, method, headers, nextParameters, data);
@@ -194,10 +195,11 @@ public class RESTUtil {
 					Paged pagedItem = (Paged) item;
 					int total = pagedItem.getPageTotal();
 					int size = pagedItem.getPageSize();
-					int startAt = pagedItem.getPageStartAt();
+					// Note: Some REST API does not return startAt, so keep track of it ourselves
+					startAt += size;
 					if (total != -1) {
-						if (startAt + size < total) {
-							nextParameters.put(startAtParameter, startAt + size);
+						if (startAt < total) {
+							nextParameters.put(startAtParameter, startAt);
 							hasNext = true;
 							Log.debug(LOGGER, "More items");
 						} else {
@@ -208,7 +210,7 @@ public class RESTUtil {
 						// Some REST APIs return incorrect total which is equal to size. 
 						// So to be safe, total is set to -1, and one extra call is made
 						if (size != 0) {
-							nextParameters.put(startAtParameter, startAt + size);
+							nextParameters.put(startAtParameter, startAt);
 							hasNext = true;
 							Log.debug(LOGGER, "More items");
 						} else {

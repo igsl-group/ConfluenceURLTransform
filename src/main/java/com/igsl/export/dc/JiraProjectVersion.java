@@ -8,13 +8,16 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
-public class ConfluenceUser extends ObjectExport {
+public class JiraProjectVersion extends ObjectExport {
 
-	private static final String SQL = "SELECT ID, USER_NAME, DISPLAY_NAME FROM CWD_USER";
+	private static final String SQL = 
+			"SELECT v.ID, v.VNAME, v.DESCRIPTION, p.PKEY " + 
+			"FROM PROJECTVERSION v JOIN PROJECT p ON p.ID = v.PROJECT";
 	public static final String COL_ID = "ID";
-	public static final String COL_USERNAME = "USERNAME";
-	public static final String COL_DISPLAYNAME = "DISPLAYNAME";
-	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_USERNAME, COL_DISPLAYNAME);
+	public static final String COL_NAME = "VNAME";
+	public static final String COL_DESCRIPTION = "DESCRIPTION";
+	public static final String COL_PROJECTKEY = "PKEY";
+	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_NAME, COL_DESCRIPTION, COL_PROJECTKEY);
 	
 	private PreparedStatement ps;
 	private ResultSet rs;
@@ -26,7 +29,7 @@ public class ConfluenceUser extends ObjectExport {
 
 	@Override
 	public void startGetObjects() throws Exception {
-		Connection conn = config.getConnections().getConfluenceConnection();
+		Connection conn = config.getConnections().getJiraConnection();
 		ps = conn.prepareStatement(SQL);
 		rs = ps.executeQuery();
 	}
@@ -36,8 +39,9 @@ public class ConfluenceUser extends ObjectExport {
 		if (rs.next()) {
 			String id = rs.getString(1);
 			String name = rs.getString(2);
-			String displayName = rs.getString(3);
-			return Arrays.asList(id, name, displayName);
+			String description = rs.getString(3);
+			String projectKey = rs.getString(4);
+			return Arrays.asList(id, name, description, projectKey);
 		}
 		return null;
 	}
@@ -50,13 +54,14 @@ public class ConfluenceUser extends ObjectExport {
 
 	@Override
 	protected String getObjectKey(CSVRecord r) throws Exception {
-		String displayName = r.get(COL_DISPLAYNAME);
-		return displayName;
+		String name = r.get(COL_NAME);
+		String projectKey = r.get(COL_PROJECTKEY);
+		return projectKey + IDENTIFIER_DELIMITER + name;
 	}
 
 	@Override
 	protected String getObjectId(CSVRecord r) throws Exception {
-		String id = r.get(COL_USERNAME);
+		String id = r.get(COL_ID);
 		return id;
 	}
 }

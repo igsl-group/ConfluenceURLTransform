@@ -48,7 +48,11 @@ public class CloudConfluenceBlueprints extends BaseExport<ConfluencePageTemplate
 	protected List<ObjectData> getCSVRows(ConfluencePageTemplates obj) {
 		List<ObjectData> result = new ArrayList<>();
 		for (ConfluencePageTemplate page : obj.getResults()) {
-			List<String> list = Arrays.asList(page.getTemplateId(), page.getName());
+			List<String> list = Arrays.asList(
+					page.getTemplateId(), page.getName(), page.getDescription(), 
+					page.getTemplateType(),
+					page.getReferencingBlueprint(),
+					page.getBody().getStorage().getValue());
 			String uniqueKey = page.getName();
 			result.add(new ObjectData(page.getTemplateId(), uniqueKey, list));
 		}
@@ -60,8 +64,29 @@ public class CloudConfluenceBlueprints extends BaseExport<ConfluencePageTemplate
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("expand", "body");
-		List<ConfluencePageTemplates> result = invokeRest(
+		List<ConfluencePageTemplates> result = new ArrayList<>();
+		List<ConfluencePageTemplates> defaultTemplates = invokeRest(
 				config, "/wiki/rest/api/template/blueprint", HttpMethod.GET, header, query, null);
+		// No information can be used to distinguish between default and modfied copies
+		// Rely on ID format to use modified copies over default ones
+		// For duplicated ones, the first found will be used
+		Map<String, ConfluencePageTemplate> map = new HashMap<>();
+		for (ConfluencePageTemplates templates : defaultTemplates) {
+			for (ConfluencePageTemplate template : templates.getResults()) {
+				if (template.getTemplateId().contains("-")) {
+					// Override only if not found
+					if (!map.containsKey(template.getName())) {
+						map.put(template.getName(), template);
+					}
+				} else {
+					// Always override
+					map.put(template.getName(), template);
+				}
+			}
+		}
+		ConfluencePageTemplates t = new ConfluencePageTemplates();
+		t.setResults(new ArrayList<>(map.values()));
+		result.add(t);
 		return result;
 	}
 
