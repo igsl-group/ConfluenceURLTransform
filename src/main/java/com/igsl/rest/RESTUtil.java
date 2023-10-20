@@ -40,6 +40,10 @@ public class RESTUtil {
 	public static final String ENCODDING = "ASCII";	
 	public static final String SCHEME = "https://";
 
+	// Request throttle
+	private static long lastCheck = System.currentTimeMillis();
+	private static Float allowance = null;
+	
 	private static final ObjectMapper OM = new ObjectMapper()
 			.enable(SerializationFeature.INDENT_OUTPUT)
 			.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
@@ -82,6 +86,27 @@ public class RESTUtil {
 				target = target.queryParam(query.getKey(), query.getValue());
 			}
 		}
+		// Check rate
+		if (allowance == null) {
+			allowance = (float) config.getCloud().getRate();
+		}
+		long now = System.currentTimeMillis();
+		long timePassed = now - lastCheck;
+		Log.debug(LOGGER, "Throttle: Time passed: " + timePassed);
+		lastCheck = now;
+		allowance += timePassed * (config.getCloud().getRate() / config.getCloud().getPeriod());
+		Log.debug(LOGGER, "Throttle: Allowance: " + allowance);
+		Log.debug(LOGGER, "Throttle: RATE: " + config.getCloud().getRate());
+		if (allowance > config.getCloud().getRate()) {
+			Log.debug(LOGGER, "Throttle: Allowance > RATE, throttle");
+			allowance = config.getCloud().getRate();	// throttle it
+		}
+		if (allowance < 1) {
+			Log.debug(LOGGER, "Throttle: Allowance < 1, sleeping");
+			Thread.sleep((long) config.getCloud().getPeriod());
+		}
+		Log.debug(LOGGER, "Throttle: Executing, allowance - 1");
+		allowance -= 1;
 		Builder builder = target.request();
 		if (headers != null) {
 			builder = builder.headers(headers);

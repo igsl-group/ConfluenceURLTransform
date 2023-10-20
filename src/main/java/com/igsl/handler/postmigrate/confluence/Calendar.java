@@ -34,6 +34,7 @@ public class Calendar extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(new ParamSetting(
+					Calendar.class,
 					CALENDAR_ID, 
 					CloudConfluencePageTemplates.class)
 				));

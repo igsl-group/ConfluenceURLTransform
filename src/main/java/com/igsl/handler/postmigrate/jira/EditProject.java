@@ -33,7 +33,7 @@ public class EditProject extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PROJECT_ID, CloudJiraProjects.class)
+					new ParamSetting(EditProject.class, PROJECT_ID, CloudJiraProjects.class)
 				));
 	}
 

@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,10 +23,15 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,11 +43,16 @@ import com.igsl.config.Config;
 import com.igsl.export.cloud.BaseExport;
 import com.igsl.export.cloud.CloudConfluencePages;
 import com.igsl.export.cloud.CloudConfluenceSpaces;
+import com.igsl.export.cloud.model.ConfluenceBody;
+import com.igsl.export.cloud.model.ConfluenceBodyType;
 import com.igsl.export.cloud.model.ConfluencePage;
 import com.igsl.export.cloud.model.ConfluencePages;
+import com.igsl.export.cloud.model.ConfluenceVersion;
 import com.igsl.export.dc.ObjectExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
+import com.igsl.rest.RESTUtil;
+import com.igsl.rest.UpdatePage;
 
 public class ConfluenceURLTransform {
 	private static final Logger LOGGER = LogManager.getLogger(ConfluenceURLTransform.class);
@@ -376,7 +387,7 @@ public class ConfluenceURLTransform {
 				config.getUrlExportDirectory().toFile().getAbsolutePath() , OUTPUT_PAGE_POST_MIGRATE);
 		// Initialize handlers
 		List<Handler> handlers = new ArrayList<>();
-		for (String handlerName : config.getCloud().getPostMigrateHandlers()) {
+		for (String handlerName : config.getPostMigrate().getPostMigrateHandlers()) {
 			try {
 				Handler h = (Handler) Class.forName(handlerName)
 						.getDeclaredConstructor(Config.class).newInstance(config);
@@ -477,9 +488,37 @@ public class ConfluenceURLTransform {
 					}	// While matcher.find
 					matcher.appendTail(sb);
 					if (changed) {
-						// TODO Perform update
+						// Perform update
 						Log.debug(LOGGER, spaceKey + " " + title + " from: " + content);
 						Log.debug(LOGGER, spaceKey + " " + title + " to: " + sb.toString());
+						if (config.getPostMigrate().isPerformUpdate()) {
+							MultivaluedMap<String, Object> authHeader = 
+									RESTUtil.getAuthenticationHeader(config);
+							Map<String, Object> query = new HashMap<>();
+							query.put("id", page.getId());
+							query.put("status", "current");
+							query.put("title", page.getTitle());
+							ConfluenceBodyType bodyType = new ConfluenceBodyType();
+							bodyType.setRepresentation("storage");
+							bodyType.setValue(sb.toString());
+							ConfluenceBody body = new ConfluenceBody();
+							body.setStorage(bodyType);
+							query.put("body", body);
+							ConfluenceVersion version = page.getVersion();
+							version.setNumber(version.getNumber() + 1);
+							query.put("version", version);
+							RESTUtil.invokeRest(
+									UpdatePage.class, 
+									config, 
+									"/pages/" + page.getId(), 
+									HttpMethod.PUT, 
+									authHeader, 
+									query, 
+									null, 
+									"startAt", 
+									HttpStatus.SC_OK);
+							Log.info(LOGGER, "Page updated: " + page.getId());
+						}
 					}
 				} else {
 					Log.error(LOGGER, "Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);

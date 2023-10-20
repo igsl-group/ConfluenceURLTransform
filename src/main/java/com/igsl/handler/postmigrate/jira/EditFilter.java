@@ -34,7 +34,7 @@ public class EditFilter extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(FILTER_ID, CloudJiraFilters.class)
+					new ParamSetting(EditFilter.class, FILTER_ID, CloudJiraFilters.class)
 				));
 	}
 

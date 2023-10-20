@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.igsl.Log;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.CloudJiraFieldConfigurations;
 import com.igsl.export.cloud.CloudJiraSLAs;
@@ -36,6 +37,7 @@ public class SLA extends BasePostMigrate {
 				),
 				Arrays.asList(
 					new PathSetting(
+							SLA.class,
 							Pattern.compile("/servicedesk/admin/([^/]+)/sla/custom/([0-9]+)"),
 							CloudJiraFieldConfigurations.class) {
 							@Override
@@ -45,6 +47,9 @@ public class SLA extends BasePostMigrate {
 								if (mapping.containsKey(slaId)) {
 									return "/servicedesk/admin/$1/sla/custom/" + mapping.get(slaId);
 								} else {
+									Log.warn(LOGGER, 
+											getPostMigrate().getCanonicalName() + 
+											" Mapping not found for slaId: " + slaId);
 									return m.group(0);
 								}
 							}

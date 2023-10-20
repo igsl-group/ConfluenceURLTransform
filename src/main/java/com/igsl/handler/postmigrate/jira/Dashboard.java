@@ -34,8 +34,8 @@ public class Dashboard extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PAGEID, CloudJiraDashboards.class),
-					new ParamSetting(SELECT_PAGEID, CloudJiraDashboards.class)
+					new ParamSetting(Dashboard.class, PAGEID, CloudJiraDashboards.class),
+					new ParamSetting(Dashboard.class, SELECT_PAGEID, CloudJiraDashboards.class)
 				));
 	}
 

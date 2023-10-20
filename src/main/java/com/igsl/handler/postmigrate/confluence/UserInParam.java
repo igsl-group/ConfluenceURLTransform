@@ -42,9 +42,9 @@ public class UserInParam extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PARAM_NAME, CloudConfluenceUsers.class),
-					new ParamSetting(PARAM_USERNAME, CloudConfluenceUsers.class),
-					new ParamSetting(PARAM_USER_NAME, CloudConfluenceUsers.class)
+					new ParamSetting(UserInParam.class, PARAM_NAME, CloudConfluenceUsers.class),
+					new ParamSetting(UserInParam.class, PARAM_USERNAME, CloudConfluenceUsers.class),
+					new ParamSetting(UserInParam.class, PARAM_USER_NAME, CloudConfluenceUsers.class)
 				));
 	}
 

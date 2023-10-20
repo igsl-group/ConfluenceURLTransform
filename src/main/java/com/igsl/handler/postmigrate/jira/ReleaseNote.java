@@ -39,8 +39,8 @@ public class ReleaseNote extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PROJECT_ID, CloudJiraProjects.class),
-					new ParamSetting(VERSION, CloudJiraProjectVersions.class)
+					new ParamSetting(ReleaseNote.class, PROJECT_ID, CloudJiraProjects.class),
+					new ParamSetting(ReleaseNote.class, VERSION, CloudJiraProjectVersions.class)
 				));
 	}
 

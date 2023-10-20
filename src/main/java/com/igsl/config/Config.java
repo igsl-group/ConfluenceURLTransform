@@ -12,6 +12,7 @@ public class Config {
 	private Connections connections;
 	private URLTransform urlTransform;	
 	private ObjectExport dcExport;
+	private PostMigrate postMigrate;
 	@JsonIgnore
 	private Path outputDirectory;
 	@JsonIgnore
@@ -92,5 +93,11 @@ public class Config {
 	}
 	public void setUrlExportDirectory(Path urlExportDirectory) {
 		this.urlExportDirectory = urlExportDirectory;
+	}
+	public PostMigrate getPostMigrate() {
+		return postMigrate;
+	}
+	public void setPostMigrate(PostMigrate postMigrate) {
+		this.postMigrate = postMigrate;
 	}
 }

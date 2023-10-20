@@ -33,7 +33,7 @@ public class BrowseProjects extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PROJECT_CATEGORY, CloudJiraProjectCategories.class)
+					new ParamSetting(BrowseProjects.class, PROJECT_CATEGORY, CloudJiraProjectCategories.class)
 				));
 	}
 

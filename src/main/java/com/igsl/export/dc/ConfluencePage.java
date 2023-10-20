@@ -13,14 +13,17 @@ import com.igsl.ObjectData;
 public class ConfluencePage extends ObjectExport {
 
 	private static final String SQL = 
-			"SELECT c.CONTENTID, c.TITLE, s.SPACEKEY " + 
+			"SELECT c.CONTENTID, c.VERSION, c.TITLE, s.SPACEKEY " + 
 			"FROM CONTENT c " + 
-			"JOIN SPACES s ON s.SPACEID = c.SPACEID " + 
-			"WHERE c.CONTENTTYPE = 'PAGE' AND PREVVER IS NULL AND CONTENT_STATUS = 'current'";
+            "JOIN CONTENT p ON p.CONTENTID = c.PREVVER " + 
+			"JOIN SPACES s ON (s.SPACEID = c.SPACEID OR s.SPACEID = p.SPACEID) " + 
+			"WHERE c.CONTENTTYPE = 'PAGE' AND c.CONTENT_STATUS = 'current'";
 	public static final String COL_PAGEID = "PAGEID";
+	public static final String COL_PAGEVERSION = "PAGEVERSION";
 	public static final String COL_PAGENAME = "PAGENAME";
 	public static final String COL_SPACEKEY = "SPACEKEY";
-	public static final List<String> COL_LIST = Arrays.asList(COL_PAGEID, COL_PAGENAME, COL_SPACEKEY);
+	public static final List<String> COL_LIST = Arrays.asList(
+			COL_PAGEID, COL_PAGEVERSION, COL_PAGENAME, COL_SPACEKEY);
 	
 	private ResultSet rs;
 	private PreparedStatement ps;
@@ -41,9 +44,10 @@ public class ConfluencePage extends ObjectExport {
 	public List<String> getNextObject() throws Exception {
 		if (rs.next()) {
 			String pageId = rs.getString(1);
-			String pageName = rs.getString(2);
-			String spaceKey = rs.getString(3);
-			return Arrays.asList(pageId, pageName, spaceKey);
+			String pageVersion = rs.getString(2);
+			String pageName = rs.getString(3);
+			String spaceKey = rs.getString(4);
+			return Arrays.asList(pageId, pageVersion, pageName, spaceKey);
 		}
 		return null;
 	}
@@ -56,9 +60,10 @@ public class ConfluencePage extends ObjectExport {
 
 	@Override
 	protected String getObjectKey(CSVRecord r) throws Exception {
+		String pageVersion = r.get(COL_PAGEVERSION);
 		String pageName = r.get(COL_PAGENAME);
 		String spaceKey = r.get(COL_SPACEKEY);
-		return ObjectData.createUniqueKey(spaceKey, pageName);
+		return ObjectData.createUniqueKey(spaceKey, pageName, pageVersion);
 	}
 
 	@Override

@@ -6,8 +6,9 @@ public class Cloud {
 	private String domain;
 	private String userName;
 	private String apiToken;
+	private float rate;
+	private float period;
 	private List<String> handlers;
-	private List<String> postMigrateHandlers;
 	public String getDomain() {
 		return domain;
 	}
@@ -32,10 +33,16 @@ public class Cloud {
 	public void setHandlers(List<String> handlers) {
 		this.handlers = handlers;
 	}
-	public List<String> getPostMigrateHandlers() {
-		return postMigrateHandlers;
+	public float getRate() {
+		return rate;
 	}
-	public void setPostMigrateHandlers(List<String> postMigrateHandlers) {
-		this.postMigrateHandlers = postMigrateHandlers;
+	public void setRate(float rate) {
+		this.rate = rate;
+	}
+	public float getPeriod() {
+		return period;
+	}
+	public void setPeriod(float period) {
+		this.period = period;
 	}
 }

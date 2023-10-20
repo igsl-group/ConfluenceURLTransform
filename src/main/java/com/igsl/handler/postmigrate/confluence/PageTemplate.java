@@ -33,7 +33,7 @@ public class PageTemplate extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(ENTITY_ID, CloudConfluencePageTemplates.class)
+					new ParamSetting(PageTemplate.class, ENTITY_ID, CloudConfluencePageTemplates.class)
 				));
 	}
 

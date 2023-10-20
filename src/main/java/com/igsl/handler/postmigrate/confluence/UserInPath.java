@@ -39,6 +39,7 @@ public class UserInPath extends BasePostMigrate {
 				),
 				Arrays.asList(
 					new PathSetting(
+							UserInPath.class,
 							Pattern.compile("/display/~([^?]+)"),
 							CloudConfluenceUsers.class
 							) {
@@ -49,7 +50,9 @@ public class UserInPath extends BasePostMigrate {
 								if (mapping.containsKey(userName)) {
 									return "/display/" + mapping.get(userName);
 								} else {
-									Log.warn(LOGGER, "Mapping not found for username: " + userName);
+									Log.warn(LOGGER, 
+											getPostMigrate().getCanonicalName() + 
+											" Mapping not found for username: " + userName);
 									return m.group(0);
 								}
 							}

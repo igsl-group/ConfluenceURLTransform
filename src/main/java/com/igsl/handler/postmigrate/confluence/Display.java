@@ -11,8 +11,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.igsl.config.Config;
+import com.igsl.export.cloud.CloudConfluenceAttachments;
 import com.igsl.export.cloud.CloudConfluencePages;
-import com.igsl.export.cloud.CloudConfluenceSpaces;
 import com.igsl.handler.URLPattern;
 import com.igsl.handler.postmigrate.BasePostMigrate;
 import com.igsl.handler.postmigrate.MappingSetting;
@@ -25,7 +25,7 @@ public class Display extends BasePostMigrate {
 	private static final String PAGEID = "pageId";
 	
 	private static final URLPattern[] PATTERNS = new URLPattern[] {
-			new URLPattern("/display/[^?]+").setQuery("pageId", "preview"),
+			new URLPattern("/display/[^?]+").setQuery(PAGEID, PREVIEW),
 	};
 	
 	public Display(Config config) {
@@ -33,34 +33,36 @@ public class Display extends BasePostMigrate {
 				config.getUrlTransform().getConfluenceFromHost(), 
 				Arrays.asList(
 					new MappingSetting(
-						new CloudConfluenceSpaces(),
-						CloudConfluenceSpaces.COL_DCID,
-						CloudConfluenceSpaces.COL_CLOUDID),
-					new MappingSetting(
 						new CloudConfluencePages(), 
 						CloudConfluencePages.COL_DCID, 
-						CloudConfluencePages.COL_CLOUDID)
+						CloudConfluencePages.COL_CLOUDID),
+					new MappingSetting(
+						new CloudConfluenceAttachments(),
+						CloudConfluenceAttachments.COL_DCID,
+						CloudConfluenceAttachments.COL_CLOUDID)
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PAGEID, CloudConfluencePages.class),
+					new ParamSetting(Display.class, PAGEID, CloudConfluencePages.class),
 					new ParamSetting(
+							Display.class, 
 							PREVIEW, 
 							CloudConfluencePages.class) {
 						public String getReplacement(NameValuePair param, Map<String, Map<String, String>> mappings) {
 							Pattern p = Pattern.compile("/([0-9]+)/([0-9]+)/(.+)");
 							Matcher m = p.matcher(param.getValue());
-							Map<String, String> spaceIdMap = mappings.get(CloudConfluenceSpaces.class.getCanonicalName());
+							Map<String, String> attachmentMap = 
+									mappings.get(CloudConfluenceAttachments.class.getCanonicalName());
 							Map<String, String> pageIdMap = mappings.get(CloudConfluencePages.class.getCanonicalName());
 							if (m.matches()) {
-								String spaceId = m.group(1);
-								String pageId = m.group(2);
+								String pageId = m.group(1);
+								String attachmentId = m.group(2);
 								String attachmentName = m.group(3);
-								if (spaceIdMap.containsKey(spaceId) && pageIdMap.containsKey(pageId)) {
+								if (pageIdMap.containsKey(pageId) && attachmentMap.containsKey(attachmentId)) {
 									StringBuilder sb = new StringBuilder();
 									m.appendReplacement(sb, 
-											"/" + spaceIdMap.get(spaceId) + 
 											"/" + pageIdMap.get(pageId) + 
+											"/" + attachmentMap.get(attachmentId) + 
 											"/" + attachmentName);
 									m.appendTail(sb);
 									return sb.toString();

@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.igsl.CSV;
+import com.igsl.Log;
 import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.dc.ObjectExport;
@@ -33,8 +34,7 @@ public abstract class BaseExport<T> {
 	public static final String COL_NOTE = "NOTE";
 	public static final String NOTE_NO_MATCH = "No Match";
 	public static final String NOTE_MULTIPLE_MATCHES = "Multiple Matches";
-	public static final String NOTE_MATCHED = "Matched";
-	
+	public static final String NOTE_MATCHED = "Matched";	
 	public static final String COL_DCID = "DC_ID";
 	public static final String COL_DCKEY = "DC_KEY";
 	public static final String COL_CLOUDID = "CLOUD_ID";
@@ -118,9 +118,17 @@ public abstract class BaseExport<T> {
 			parser.forEach(new Consumer<CSVRecord>() {
 				@Override
 				public void accept(CSVRecord r) {
+					String note = r.get(COL_NOTE);
 					String dcId = r.get(COL_DCID);
 					String cloudId = r.get(COL_CLOUDID);
-					result.put(dcId, cloudId);
+					switch (note) {
+					case NOTE_MATCHED:
+						result.put(dcId, cloudId);
+						break;
+					default: 
+						Log.warn(LOGGER, "Unmatched entry ignored: [" + dcId + "] = [" + cloudId + "]");
+						break;
+					}
 				}
 			});
 		}

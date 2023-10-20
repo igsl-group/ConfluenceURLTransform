@@ -19,14 +19,18 @@ import com.igsl.export.cloud.model.ConfluencePages;
 import com.igsl.export.cloud.model.ConfluenceSpace;
 import com.igsl.export.cloud.model.ConfluenceSpaces;
 import com.igsl.export.dc.ObjectExport;
+import com.igsl.rest.RESTUtil;
 
 public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 
 	private static final Logger LOGGER = LogManager.getLogger(CloudConfluencePages.class);
 	public static final String COL_ID = "ID";
 	public static final String COL_TITLE = "TITLE";
+	public static final String COL_VERSION = "VERSION";
 	public static final String COL_SPACEID = "SPACEID";
-	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_TITLE, COL_SPACEID);
+	public static final String COL_SPACEKEY = "SPACEKEY";
+	public static final List<String> COL_LIST = Arrays.asList(
+			COL_ID, COL_TITLE, COL_VERSION, COL_SPACEID, COL_SPACEKEY);
 	
 	private String spaceId;
 	private String title;
@@ -54,8 +58,14 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	protected List<ObjectData> getCSVRows(ConfluencePages obj) {
 		List<ObjectData> result = new ArrayList<>();
 		for (ConfluencePage page : obj.getResults()) {
-			List<String> list = Arrays.asList(page.getId(), page.getTitle(), page.getSpaceId());
-			String uniqueKey = ObjectData.createUniqueKey(page.getSpaceKey(), page.getTitle());
+			List<String> list = Arrays.asList(
+					page.getId(), 
+					page.getTitle(), 
+					Integer.toString(page.getVersion().getNumber()),
+					page.getSpaceId(),
+					page.getSpaceKey());
+			String uniqueKey = ObjectData.createUniqueKey(
+					page.getSpaceKey(), page.getTitle(), Integer.toString(page.getVersion().getNumber()));
 			result.add(new ObjectData(page.getId(), uniqueKey, list));
 		}
 		return result;
@@ -73,7 +83,38 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 			query.put("title", title);
 		}
 		List<ConfluencePages> result = invokeRest(config, "/wiki/api/v2/pages", HttpMethod.GET, header, query, null);
-		// Resolve spaceKey
+		// Get versions for each page
+		ConfluencePages versionedPages = new ConfluencePages();
+		versionedPages.setResults(new ArrayList<ConfluencePage>());
+		for (ConfluencePages pages : result) {
+			for (ConfluencePage page : pages.getResults()) {
+				int version = page.getVersion().getNumber();
+				// Test each version number
+				while (version > 1) { 
+					version--;
+					query.put("version", version);
+					List<ConfluencePage> versionList = RESTUtil.invokeRest(
+							ConfluencePage.class, 
+							config, 
+							"/wiki/api/v2/pages/" + page.getId(), 
+							HttpMethod.GET, 
+							header, 
+							query, 
+							null, 
+							"");
+					int count = 0;
+					for (ConfluencePage p : versionList) {
+						versionedPages.getResults().add(p);
+						count++;
+					}
+					if (count == 0) {
+						break;
+					}
+				}
+			}
+		}
+		result.add(versionedPages);
+		// Get spaces
 		CloudConfluenceSpaces spacesExport = new CloudConfluenceSpaces();
 		Map<String, String> spaceList = new HashMap<>();
 		for (ConfluenceSpaces spaces : spacesExport.getObjects(config)) {
@@ -81,6 +122,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 				spaceList.put(space.getId(), space.getKey());
 			}
 		}		
+		// Resolve spaceKey
 		for (ConfluencePages pages : result) {
 			for (ConfluencePage page : pages.getResults()) {
 				if (spaceList.containsKey(page.getSpaceId())) {

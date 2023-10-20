@@ -35,6 +35,7 @@ public class Attachment extends BasePostMigrate {
 				),
 				Arrays.asList(
 					new PathSetting(
+						Attachment.class,
 						Pattern.compile("/secure/attachment/(.+)/(.+)"),
 						CloudJiraAttachments.class
 						) {
@@ -45,7 +46,9 @@ public class Attachment extends BasePostMigrate {
 							if (mapping.containsKey(attachmentId)) {
 								return "/secure/attachment/" + mapping.get(attachmentId) + "/$2";
 							} else {
-								Log.warn(LOGGER, "Mapping not found for attachmentId: " + attachmentId);
+								Log.warn(LOGGER, 
+										getPostMigrate().getCanonicalName() + 
+										" Mapping not found for attachmentId: " + attachmentId);
 								return m.group(0);
 							}
 						}

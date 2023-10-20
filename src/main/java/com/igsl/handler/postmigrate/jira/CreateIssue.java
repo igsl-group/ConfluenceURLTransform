@@ -40,8 +40,8 @@ public class CreateIssue extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PROJECT_ID, CloudJiraProjects.class),
-					new ParamSetting(ISSUE_TYPE, CloudJiraIssueTypes.class)
+					new ParamSetting(CreateIssue.class, PROJECT_ID, CloudJiraProjects.class),
+					new ParamSetting(CreateIssue.class, ISSUE_TYPE, CloudJiraIssueTypes.class)
 				));
 	}
 

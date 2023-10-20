@@ -33,7 +33,7 @@ public class RapidBoard extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(BOARD_ID, CloudJiraBoards.class)
+					new ParamSetting(RapidBoard.class, BOARD_ID, CloudJiraBoards.class)
 				));
 	}
 

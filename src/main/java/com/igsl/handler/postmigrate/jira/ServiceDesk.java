@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.igsl.Log;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.CloudJiraBoards;
 import com.igsl.export.cloud.CloudJiraServiceDesks;
@@ -38,6 +39,7 @@ public class ServiceDesk extends BasePostMigrate {
 				),
 				Arrays.asList(
 					new PathSetting(
+							ServiceDesk.class,
 							Pattern.compile("/servicedesk/customer/portal/([0-9]+)(.*)"),
 							CloudJiraServiceDesks.class) {						
 						@Override
@@ -48,6 +50,9 @@ public class ServiceDesk extends BasePostMigrate {
 								StringBuilder sb = new StringBuilder();
 								return "/servicedesk/customer/portal/" + mapping.get(portalId) + "$2";
 							} else {
+								Log.warn(LOGGER, 
+										getPostMigrate().getCanonicalName() + 
+										" Mapping not found for portalId: " + portalId);
 								return m.group(0);
 							}
 						}

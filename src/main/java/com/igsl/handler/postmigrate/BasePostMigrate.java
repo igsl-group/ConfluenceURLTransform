@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import com.igsl.CSV;
 import com.igsl.Log;
 import com.igsl.config.Config;
-import com.igsl.export.cloud.BaseExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
 
@@ -58,10 +57,12 @@ public abstract class BasePostMigrate extends Handler {
 	}
 	
 	protected void loadMappings() throws IOException {
+		Log.debug(LOGGER, "loadMappings() start for " + this.getClass().getCanonicalName());
 		mappings = new HashMap<>();
 		for (MappingSetting setting: mappingSettings) {
 			Map<String, String> mapping = new HashMap<>();
 			Path p = setting.getBaseExport().getMappingPath(config.getCloudExportDirectory().toFile().getAbsolutePath());
+			Log.debug(LOGGER, "loadMappings() from file: " + p.toFile().getAbsolutePath());
 			try (	FileReader fr = new FileReader(p.toFile()); 
 					CSVParser parser = new CSVParser(fr, CSV.getCSVReadFormat())) {
 				parser.forEach(new Consumer<CSVRecord>() {
@@ -69,12 +70,15 @@ public abstract class BasePostMigrate extends Handler {
 					public void accept(CSVRecord t) {
 						String key = t.get(setting.getKeyColumn());
 						String value = t.get(setting.getValueColumn());
+						Log.debug(LOGGER, "loadMappings() data: [" + key + "] = [" + value + "]");
 						mapping.put(key, value);
 					}
-				});				
+				});
 			}
+			Log.debug(LOGGER, "loadMappings() saved under: " + setting.getBaseExport().getClass().getCanonicalName());
 			mappings.put(setting.getBaseExport().getClass().getCanonicalName(), mapping);
 		}
+		Log.debug(LOGGER, "loadMappings() done for " + this.getClass().getCanonicalName());
 	}
 	
 	@Override
@@ -95,6 +99,7 @@ public abstract class BasePostMigrate extends Handler {
 	@Override
 	public HandlerResult handle(URI uri, String text) throws Exception {
 		loadMappings();
+		Log.debug(LOGGER, "Handling URI: " + uri.toASCIIString());
 		URIBuilder parser = new URIBuilder(uri);
 		List<NameValuePair> params = parser.getQueryParams();
 		URIBuilder builder = new URIBuilder();
@@ -105,6 +110,7 @@ public abstract class BasePostMigrate extends Handler {
 		if (originalPath.startsWith(config.getUrlTransform().getConfluenceFromBasePath())) {
 			originalPath = originalPath.substring(config.getUrlTransform().getConfluenceFromBasePath().length());
 		}
+		Log.debug(LOGGER, "Path: " + originalPath);
 		// Remap path
 		if (pathSettings.size() != 0) {
 			for (PathSetting setting : pathSettings) {
@@ -118,26 +124,32 @@ public abstract class BasePostMigrate extends Handler {
 					builder.setPathSegments(addPathSegments(
 							config.getUrlTransform().getConfluenceToBasePath(),
 							sb.toString()));
+					Log.debug(LOGGER, "Path changed: [" + originalPath + "] => [" + sb.toString() + "]");
 				} else {
-					Log.warn(LOGGER, "Path does not match pattern: " + uri.toASCIIString());
+					Log.warn(LOGGER, 
+							this.getClass().getCanonicalName() + " Path does not match pattern: " + uri.toASCIIString());
 					builder.setPathSegments(addPathSegments(
 							config.getUrlTransform().getConfluenceToBasePath(),
 							originalPath));
 				}
 			}
 		} else {
+			Log.debug(LOGGER, "No PathSetting, path unchanged");
 			builder.setPathSegments(addPathSegments(
 					config.getUrlTransform().getConfluenceToBasePath(),
 					originalPath));
 		}
 		// Remap parameters
 		for (NameValuePair param : params) {
+			Log.debug(LOGGER, "Param: [" + param.getName() + "] = [" + param.getValue() + "]");
 			if (paramSettings.containsKey(param.getName())) {
 				ParamSetting setting = paramSettings.get(param.getName());
 				String replacement = setting.getReplacement(param, mappings);
+				Log.debug(LOGGER, "Param changed: [" + param.getValue() + "] => [" + replacement + "]");
 				builder.addParameter(param.getName(), replacement);
 			} else {
 				// Add parameter as is
+				Log.debug(LOGGER, "No ParamSetting, param unchanged");
 				builder.addParameter(param.getName(), param.getValue());
 			}
 		}

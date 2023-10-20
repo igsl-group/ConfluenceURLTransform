@@ -33,7 +33,7 @@ public class FieldLayout extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(ID, CloudJiraFieldConfigurations.class)
+					new ParamSetting(FieldLayout.class, ID, CloudJiraFieldConfigurations.class)
 				));
 	}
 

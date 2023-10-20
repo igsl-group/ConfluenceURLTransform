@@ -38,7 +38,7 @@ public class Page extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(new ParamSetting(
-					PAGE_ID, CloudConfluencePages.class)
+					Page.class, PAGE_ID, CloudConfluencePages.class)
 				));
 	}
 

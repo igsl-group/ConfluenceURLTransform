@@ -39,7 +39,7 @@ public class FilterAndJQL extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(FILTER, CloudJiraFilters.class)
+					new ParamSetting(FilterAndJQL.class, FILTER, CloudJiraFilters.class)
 				));
 	}
 
