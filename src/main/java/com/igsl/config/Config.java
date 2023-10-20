@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Config {
 	private static final String NEWLINE = System.getProperty("line.separator");	
+	private Handler handler;
 	private Cloud cloud;
 	private Connections connections;
 	private URLTransform urlTransform;	
@@ -99,5 +100,11 @@ public class Config {
 	}
 	public void setPostMigrate(PostMigrate postMigrate) {
 		this.postMigrate = postMigrate;
+	}
+	public Handler getHandler() {
+		return handler;
+	}
+	public void setHandler(Handler handler) {
+		this.handler = handler;
 	}
 }

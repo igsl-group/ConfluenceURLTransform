@@ -103,7 +103,7 @@ public class RESTUtil {
 		}
 		if (allowance < 1) {
 			Log.debug(LOGGER, "Throttle: Allowance < 1, sleeping");
-			Thread.sleep((long) config.getCloud().getPeriod());
+			Thread.sleep((long) ((float) config.getCloud().getPeriod()));
 		}
 		Log.debug(LOGGER, "Throttle: Executing, allowance - 1");
 		allowance -= 1;

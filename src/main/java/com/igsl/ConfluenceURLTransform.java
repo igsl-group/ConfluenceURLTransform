@@ -131,7 +131,7 @@ public class ConfluenceURLTransform {
 				Log.info(LOGGER, "Page requiring post migrate will be written to: " +  pageList);
 				// Create handlers
 				List<Handler> handlers = new ArrayList<>();
-				for (String handlerName : config.getUrlTransform().getHandlers()) {
+				for (String handlerName : config.getHandler().getUrlTransform()) {
 					try {
 						Handler h = (Handler) Class.forName(handlerName)
 								.getDeclaredConstructor(Config.class).newInstance(config);
@@ -316,7 +316,7 @@ public class ConfluenceURLTransform {
 		}
 		config.setDcExportDirectory(dcPath);
 		List<BaseExport<?>> exporters = new ArrayList<>();
-		for (String exporterName : config.getCloud().getHandlers()) {
+		for (String exporterName : config.getHandler().getCloud()) {
 			try {
 				BaseExport<?> exporter = (BaseExport<?>) Class.forName(exporterName)
 						.getDeclaredConstructor().newInstance();
@@ -340,7 +340,7 @@ public class ConfluenceURLTransform {
 	
 	private static void exportDCObjects(Config config) throws Exception {
 		List<ObjectExport> exporters = new ArrayList<>(); 
-		for (String exporterName : config.getDcExport().getHandlers()) {
+		for (String exporterName : config.getHandler().getDc()) {
 			try {
 				ObjectExport exporter = (ObjectExport) Class.forName(exporterName)
 						.getDeclaredConstructor().newInstance();
@@ -387,7 +387,7 @@ public class ConfluenceURLTransform {
 				config.getUrlExportDirectory().toFile().getAbsolutePath() , OUTPUT_PAGE_POST_MIGRATE);
 		// Initialize handlers
 		List<Handler> handlers = new ArrayList<>();
-		for (String handlerName : config.getPostMigrate().getPostMigrateHandlers()) {
+		for (String handlerName : config.getHandler().getPostMigrate()) {
 			try {
 				Handler h = (Handler) Class.forName(handlerName)
 						.getDeclaredConstructor(Config.class).newInstance(config);

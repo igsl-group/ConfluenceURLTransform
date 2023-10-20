@@ -3,47 +3,11 @@
         "domain": "pccwglobal.atlassian.net",
         "userName": null,
         "apiToken": null,
-        "handlers": [
-            "com.igsl.export.cloud.CloudConfluenceBlueprints",
-            "com.igsl.export.cloud.CloudConfluenceCalendars",
-            "com.igsl.export.cloud.CloudConfluencePages",
-            "com.igsl.export.cloud.CloudConfluencePageTemplates",
-            "com.igsl.export.cloud.CloudConfluenceSpaces",
-            "com.igsl.export.cloud.CloudConfluenceUsers",
-            "com.igsl.export.cloud.CloudJiraAttachments",
-            "com.igsl.export.cloud.CloudJiraBoards",
-            "com.igsl.export.cloud.CloudJiraDashboards",
-            "com.igsl.export.cloud.CloudJiraFieldConfigurations",
-            "com.igsl.export.cloud.CloudJiraFilters",
-            "com.igsl.export.cloud.CloudJiraIssueTypes",
-            "com.igsl.export.cloud.CloudJiraProjectCategories",
-            "com.igsl.export.cloud.CloudJiraProjects",
-            "com.igsl.export.cloud.CloudJiraProjectVersions",
-            "com.igsl.export.cloud.CloudJiraServiceDesks",
-            "com.igsl.export.cloud.CloudJiraSLAs",
-            "com.igsl.export.cloud.CloudJiraUsers"
-        ],
-        "postMigrateHandlers": [
-            "com.igsl.handler.postmigrate.confluence.Calendar",
-            "com.igsl.handler.postmigrate.confluence.Display",
-            "com.igsl.handler.postmigrate.confluence.Page",
-            "com.igsl.handler.postmigrate.confluence.PageTemplate",
-            "com.igsl.handler.postmigrate.confluence.UserInParam",
-            "com.igsl.handler.postmigrate.confluence.UserInPath",
-            "com.igsl.handler.postmigrate.jira.Attachment",
-            "com.igsl.handler.postmigrate.jira.BrowseProjects",
-            "com.igsl.handler.postmigrate.jira.CreateIssue",
-            "com.igsl.handler.postmigrate.jira.Dashboard",
-            "com.igsl.handler.postmigrate.jira.EditFilter",
-            "com.igsl.handler.postmigrate.jira.EditProject",
-            "com.igsl.handler.postmigrate.jira.FieldLayout",
-            "com.igsl.handler.postmigrate.jira.FilterAndJQL",
-            "com.igsl.handler.postmigrate.jira.PostMigrate",
-            "com.igsl.handler.postmigrate.jira.RapidBoard",
-            "com.igsl.handler.postmigrate.jira.ReleaseNote",
-            "com.igsl.handler.postmigrate.jira.ServiceDesk",
-            "com.igsl.handler.postmigrate.jira.SLA"
-        ]
+        "rate": 100,
+        "period": 1000
+    },
+    "postMigrate": {
+        "performUpdate": false
     },
     "connections": {
         "confluenceConnectionString": "jdbc:mysql://localhost:3307/test",
@@ -65,19 +29,13 @@
         "jiraFromHost": "jira.pccwglobal.com",
         "jiraFromBasePath": "",
         "jiraToHost": "pccwglobal.atlassian.net",
-        "jiraToBasePath": "/jira",
-        "handlers": [
-            "com.igsl.handler.confluence.TinyURL",
-            "com.igsl.handler.confluence.Page",
-            "com.igsl.handler.confluence.Download",
-            "com.igsl.handler.confluence.PostMigrate",
-            "com.igsl.handler.confluence.HostName",
-            "com.igsl.handler.jira.PostMigrate",
-            "com.igsl.handler.jira.HostName"
-        ]
+        "jiraToBasePath": "/jira"
     },
     "dcExport": {
-        "handlers": [
+    },
+    "handler": {
+        "dc": [
+            "com.igsl.export.dc.ConfluenceAttachment",
             "com.igsl.export.dc.ConfluenceBlueprint",
             "com.igsl.export.dc.ConfluenceCalendar",
             "com.igsl.export.dc.ConfluencePage",
@@ -96,8 +54,57 @@
             "com.igsl.export.dc.JiraProjectVersion",
             "com.igsl.export.dc.JiraRapidBoard",
             "com.igsl.export.dc.JiraSLA",
-            "com.igsl.export.dc.JiraUser",
-            "com.igsl.export.dc.ObjectExport"
+            "com.igsl.export.dc.JiraUser"
+        ],
+        "urlTransform": [
+            "com.igsl.handler.confluence.Download",
+            "com.igsl.handler.confluence.HostName",
+            "com.igsl.handler.confluence.Page",
+            "com.igsl.handler.confluence.PostMigrate",
+            "com.igsl.handler.confluence.TinyURL",
+            "com.igsl.handler.jira.HostName",
+            "com.igsl.handler.jira.PostMigrate"
+        ],
+        "cloud": [
+            "com.igsl.export.cloud.CloudConfluenceAttachments",
+            "com.igsl.export.cloud.CloudConfluenceBlueprints",
+            "com.igsl.export.cloud.CloudConfluenceCalendars",
+            "com.igsl.export.cloud.CloudConfluencePages",
+            "com.igsl.export.cloud.CloudConfluencePageTemplates",
+            "com.igsl.export.cloud.CloudConfluenceSpaces",
+            "com.igsl.export.cloud.CloudConfluenceUsers",
+            "com.igsl.export.cloud.CloudJiraAttachments",
+            "com.igsl.export.cloud.CloudJiraBoards",
+            "com.igsl.export.cloud.CloudJiraDashboards",
+            "com.igsl.export.cloud.CloudJiraFieldConfigurations",
+            "com.igsl.export.cloud.CloudJiraFilters",
+            "com.igsl.export.cloud.CloudJiraIssueTypes",
+            "com.igsl.export.cloud.CloudJiraProjectCategories",
+            "com.igsl.export.cloud.CloudJiraProjects",
+            "com.igsl.export.cloud.CloudJiraProjectVersions",
+            "com.igsl.export.cloud.CloudJiraServiceDesks",
+            "com.igsl.export.cloud.CloudJiraSLAs",
+            "com.igsl.export.cloud.CloudJiraUsers"
+        ],
+        "postMigrate": [
+            "com.igsl.handler.postmigrate.confluence.Calendar",
+            "com.igsl.handler.postmigrate.confluence.Display",
+            "com.igsl.handler.postmigrate.confluence.Page",
+            "com.igsl.handler.postmigrate.confluence.PageTemplate",
+            "com.igsl.handler.postmigrate.confluence.UserInParam",
+            "com.igsl.handler.postmigrate.confluence.UserInPath",
+            "com.igsl.handler.postmigrate.jira.Attachment",
+            "com.igsl.handler.postmigrate.jira.BrowseProjects",
+            "com.igsl.handler.postmigrate.jira.CreateIssue",
+            "com.igsl.handler.postmigrate.jira.Dashboard",
+            "com.igsl.handler.postmigrate.jira.EditFilter",
+            "com.igsl.handler.postmigrate.jira.EditProject",
+            "com.igsl.handler.postmigrate.jira.FieldLayout",
+            "com.igsl.handler.postmigrate.jira.FilterAndJQL",
+            "com.igsl.handler.postmigrate.jira.RapidBoard",
+            "com.igsl.handler.postmigrate.jira.ReleaseNote",
+            "com.igsl.handler.postmigrate.jira.ServiceDesk",
+            "com.igsl.handler.postmigrate.jira.SLA"
         ]
     }
 }

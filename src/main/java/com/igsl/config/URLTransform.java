@@ -28,8 +28,6 @@ public class URLTransform implements ConfigInterface {
 	private String jiraToHost;
 	// Jira Cloud base path, e.g. /jira
 	private String jiraToBasePath;
-	// List of class name of Handler implementations, they will be checked in sequence
-	private List<String> handlers;
 	@Override
 	public List<String> validate() {
 		List<String> messages = new ArrayList<>();
@@ -65,9 +63,6 @@ public class URLTransform implements ConfigInterface {
 		}
 		if (jiraToBasePath == null) {
 			messages.add("jiraToBasePath is not specified. Please provide Jira Cloud base path, e.g. \"/jira\"");
-		}
-		if (handlers.isEmpty()) {
-			messages.add("No URLTransform handlers are defined.");
 		}
 		return messages;
 	}
@@ -142,11 +137,5 @@ public class URLTransform implements ConfigInterface {
 	}
 	public void setJiraToBasePath(String jiraToBasePath) {
 		this.jiraToBasePath = jiraToBasePath;
-	}
-	public List<String> getHandlers() {
-		return handlers;
-	}
-	public void setHandlers(List<String> handlers) {
-		this.handlers = handlers;
 	}
 }

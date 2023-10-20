@@ -1,14 +1,28 @@
 package com.igsl.config;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class Cloud {
+public class Cloud implements ConfigInterface {
 	private String domain;
 	private String userName;
 	private String apiToken;
-	private float rate;
-	private float period;
-	private List<String> handlers;
+	private Float rate = 100F;
+	private Float period = 1000F;
+	@Override
+	public List<String> validate() {
+		List<String> messages = new ArrayList<>();
+		if (domain == null || domain.isBlank()) {
+			messages.add("domain is empty. Please provide Atlassian Cloud domain, e.g. \"kcwong.atlassian.net\"");
+		}
+		if (rate == null) {
+			messages.add("rate is empty. Please provide max no. of REST API requests in period, e.g. 100");
+		}
+		if (period == null) {
+			messages.add("period is empty. Please provide period in milliseconds, e.g. 1000");
+		}
+		return messages;
+	}
 	public String getDomain() {
 		return domain;
 	}
@@ -27,22 +41,16 @@ public class Cloud {
 	public void setApiToken(String apiToken) {
 		this.apiToken = apiToken;
 	}
-	public List<String> getHandlers() {
-		return handlers;
-	}
-	public void setHandlers(List<String> handlers) {
-		this.handlers = handlers;
-	}
-	public float getRate() {
+	public Float getRate() {
 		return rate;
 	}
-	public void setRate(float rate) {
+	public void setRate(Float rate) {
 		this.rate = rate;
 	}
-	public float getPeriod() {
+	public Float getPeriod() {
 		return period;
 	}
-	public void setPeriod(float period) {
+	public void setPeriod(Float period) {
 		this.period = period;
 	}
 }
