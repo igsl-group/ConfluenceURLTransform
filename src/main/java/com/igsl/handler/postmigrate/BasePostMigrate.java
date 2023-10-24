@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import com.igsl.CSV;
 import com.igsl.Log;
 import com.igsl.config.Config;
+import com.igsl.export.cloud.BaseExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
 
@@ -34,6 +35,7 @@ public abstract class BasePostMigrate extends Handler {
 	protected List<PathSetting> pathSettings = new ArrayList<>();
 	protected Map<String, ParamSetting> paramSettings = new HashMap<>();
 	protected Map<String, Map<String, String>> mappings = new HashMap<>();
+	protected boolean mappingsLoaded = false;
 	
 	public BasePostMigrate(
 			Config config, 
@@ -57,6 +59,10 @@ public abstract class BasePostMigrate extends Handler {
 	}
 	
 	protected void loadMappings() throws IOException {
+		if (mappingsLoaded) {
+			Log.debug(LOGGER, "Mappings already loaded for " + this.getClass().getCanonicalName());
+			return;
+		}
 		Log.debug(LOGGER, "loadMappings() start for " + this.getClass().getCanonicalName());
 		mappings = new HashMap<>();
 		for (MappingSetting setting: mappingSettings) {
@@ -68,10 +74,14 @@ public abstract class BasePostMigrate extends Handler {
 				parser.forEach(new Consumer<CSVRecord>() {
 					@Override
 					public void accept(CSVRecord t) {
-						String key = t.get(setting.getKeyColumn());
-						String value = t.get(setting.getValueColumn());
-						Log.debug(LOGGER, "loadMappings() data: [" + key + "] = [" + value + "]");
-						mapping.put(key, value);
+						// Only accept matched items
+						String result = t.get(BaseExport.COL_NOTE);
+						if (BaseExport.NOTE_MATCHED.equals(result)) {
+							String key = t.get(setting.getKeyColumn());
+							String value = t.get(setting.getValueColumn());
+							Log.debug(LOGGER, "loadMappings() data: [" + key + "] = [" + value + "]");
+							mapping.put(key, value);
+						}
 					}
 				});
 			}

@@ -34,6 +34,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	
 	private String spaceId;
 	private String title;
+	private boolean getVersions = true;
 	
 	public CloudConfluencePages() {
 		super(ConfluencePages.class);
@@ -83,37 +84,39 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 			query.put("title", title);
 		}
 		List<ConfluencePages> result = invokeRest(config, "/wiki/api/v2/pages", HttpMethod.GET, header, query, null);
-		// Get versions for each page
-		ConfluencePages versionedPages = new ConfluencePages();
-		versionedPages.setResults(new ArrayList<ConfluencePage>());
-		for (ConfluencePages pages : result) {
-			for (ConfluencePage page : pages.getResults()) {
-				int version = page.getVersion().getNumber();
-				// Test each version number
-				while (version > 1) { 
-					version--;
-					query.put("version", version);
-					List<ConfluencePage> versionList = RESTUtil.invokeRest(
-							ConfluencePage.class, 
-							config, 
-							"/wiki/api/v2/pages/" + page.getId(), 
-							HttpMethod.GET, 
-							header, 
-							query, 
-							null, 
-							"");
-					int count = 0;
-					for (ConfluencePage p : versionList) {
-						versionedPages.getResults().add(p);
-						count++;
-					}
-					if (count == 0) {
-						break;
+		if (getVersions) {
+			// Get versions for each page
+			ConfluencePages versionedPages = new ConfluencePages();
+			versionedPages.setResults(new ArrayList<ConfluencePage>());
+			for (ConfluencePages pages : result) {
+				for (ConfluencePage page : pages.getResults()) {
+					int version = page.getVersion().getNumber();
+					// Test each version number
+					while (version > 1) { 
+						version--;
+						query.put("version", version);
+						List<ConfluencePage> versionList = RESTUtil.invokeRest(
+								ConfluencePage.class, 
+								config, 
+								"/wiki/api/v2/pages/" + page.getId(), 
+								HttpMethod.GET, 
+								header, 
+								query, 
+								null, 
+								"");
+						int count = 0;
+						for (ConfluencePage p : versionList) {
+							versionedPages.getResults().add(p);
+							count++;
+						}
+						if (count == 0) {
+							break;
+						}
 					}
 				}
 			}
+			result.add(versionedPages);
 		}
-		result.add(versionedPages);
 		// Get spaces
 		CloudConfluenceSpaces spacesExport = new CloudConfluenceSpaces();
 		Map<String, String> spaceList = new HashMap<>();
@@ -152,5 +155,13 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 
 	public void setTitle(String title) {
 		this.title = title;
+	}
+
+	public boolean isGetVersions() {
+		return getVersions;
+	}
+
+	public void setGetVersions(boolean getVersions) {
+		this.getVersions = getVersions;
 	}
 }
