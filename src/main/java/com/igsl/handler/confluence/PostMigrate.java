@@ -19,8 +19,9 @@ public class PostMigrate extends Confluence {
 
 	private static final URLPattern[] PATTERNS = new URLPattern[] {
 		new URLPattern().setPath("/pages/templates2/viewpagetemplate.action").setQuery("entityId"),
-		new URLPattern().setPath("/createpage.action").setQuery("fromPageId"),
+		new URLPattern().setPath("/pages/createpage.action").setQuery("fromPageId"),
 		new URLPattern().setPath("/calendar/calendarPage.action").setQuery("calendarId"),
+		new URLPattern().setPathRegex("/display/.+/calendar/.+").setQuery("calendarName"),
 		new URLPattern("/display/~[^?]+"),
 		new URLPattern("/display/[^?]+").setQuery("preview"),
 		new URLPattern().setPath("/users/viewuserprofile.action").setQuery("userName"),

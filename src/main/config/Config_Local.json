@@ -58,12 +58,12 @@
         ],
         "urlTransform": [
             "com.igsl.handler.confluence.Download",
-            "com.igsl.handler.confluence.HostName",
             "com.igsl.handler.confluence.Page",
-            "com.igsl.handler.confluence.TinyURL",
-            "com.igsl.handler.jira.HostName",
             "com.igsl.handler.confluence.PostMigrate",
-            "com.igsl.handler.jira.PostMigrate"
+            "com.igsl.handler.confluence.TinyURL",
+            "com.igsl.handler.confluence.HostName",
+            "com.igsl.handler.jira.PostMigrate",
+            "com.igsl.handler.jira.HostName"
         ],
         "cloud": [
             "com.igsl.export.cloud.CloudConfluenceAttachments",

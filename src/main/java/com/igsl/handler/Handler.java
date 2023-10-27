@@ -1,32 +1,28 @@
 package com.igsl.handler;
 
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.commons.csv.CSVParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.CSV;
 import com.igsl.config.Config;
-import com.igsl.export.cloud.BaseExport;
-import com.igsl.export.cloud.CloudConfluencePageTemplates;
 
 public abstract class Handler {
 
 	private static final Logger LOGGER = LogManager.getLogger(Handler.class);
 
 	protected static final String QUERY_PAGE_ID = 
-			"SELECT c.TITLE, s.SPACEKEY FROM CONTENT c JOIN SPACES s ON s.SPACEID = c.SPACEID WHERE c.CONTENTID = ?";
+			"SELECT c.TITLE, s.SPACEKEY " + 
+			"FROM CONTENT c " + 
+			"LEFT JOIN CONTENT p ON p.CONTENTID = c.PREVVER " + 
+			"JOIN SPACES s ON s.SPACEID = c.SPACEID OR s.SPACEID = p.SPACEID " + 
+			"WHERE c.CONTENTID = ?";
 	protected static final String QUERY_ATTACHMENT_ID = 
 			"SELECT a.TITLE AS AttachmentTitle, p.TITLE AS PageTitle, s.SPACEKEY " + 
 			"FROM CONTENT a " + 

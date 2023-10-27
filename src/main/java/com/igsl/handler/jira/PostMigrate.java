@@ -31,17 +31,17 @@ public class PostMigrate extends Jira {
 		new URLPattern().setPath("/secure/CreateIssue.jspa").setQuery("pid", "issuetype"),
 		new URLPattern().setPath("/secure/CreateIssue!default.jspa").setQuery("pid", "issuetype"),
 		new URLPattern().setPath("/secure/project/EditProject!default.jspa").setQuery("pid"),
-		new URLPattern().setPathRegex("/servicedesk/customer/portal/[0-9]+/.*"),
 		new URLPattern().setPath("/secure/BrowseProjects.jspa").setQuery("selectedCategory"),
 		new URLPattern().setPath("/secure/DeleteLink.jspa").setQuery("id", "linkType"),
 		new URLPattern().setPath("/secure/EditFilter.jspa").setQuery("filterId"),
 		new URLPattern().setPath("/secure/EditFilter!default.jspa").setQuery("filterId"),
 		new URLPattern().setPath("/issues").setQuery("filter", "jql"),
-		new URLPattern().setPath("/browse").setQuery("filter", "jql"),
+		new URLPattern().setPathRegex("/browse/[^?]+").setQuery("filter", "jql"),
 		new URLPattern().setPath("/secure/IssueNavigator.jspa").setQuery("filter", "jql"),
 		new URLPattern().setPathRegex("/projects/[^#?]*").setQuery("filter", "jql"),
 		new URLPattern().setPath("/secure/admin/ConfigureFieldLayout!default.jspa").setQuery("id"),
-		new URLPattern().setPath("/servicedesk/admin/[^/]+/sla/custom/[0-9]+"),
+		new URLPattern().setPathRegex("/servicedesk/customer/portal/[0-9]+(/.+)?"),
+		new URLPattern().setPathRegex("/servicedesk/admin/[^/]+/sla/custom/[0-9]+"),
 	};
 	
 	public PostMigrate(Config config) {
