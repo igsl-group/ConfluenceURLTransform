@@ -3,6 +3,7 @@ package com.igsl.rest;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.client.Invocation.Builder;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
@@ -53,7 +55,7 @@ public class RESTUtil {
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 			.configure(SerializationFeature.INDENT_OUTPUT, true);
 
-	public static MultivaluedMap<String, Object> getAuthenticationHeader(Config config) throws Exception {
+	public static MultivaluedMap<String, Object> getCloudAuthenticationHeader(Config config) throws Exception {
 		MultivaluedMap<String, Object> result = new MultivaluedHashMap<>();
 		String headerValue = "Basic " + 
 				Base64.getEncoder().encodeToString(
@@ -65,9 +67,122 @@ public class RESTUtil {
 		return result;
 	}
 
+	public static MultivaluedMap<String, Object> getDCJiraAuthenticationHeader(Config config) throws Exception {
+		MultivaluedMap<String, Object> result = new MultivaluedHashMap<>();
+		String headerValue = "Basic " + 
+				Base64.getEncoder().encodeToString(
+						(config.getDcExport().getJiraUser() + ":" + config.getDcExport().getJiraPassword())
+							.getBytes(ENCODDING));
+		List<Object> values = new ArrayList<>();
+		values.add(headerValue);
+		result.put("Authorization", values);
+		return result;
+	}
+	
+	public static MultivaluedMap<String, Object> getDCConfluenceAuthenticationHeader(Config config) throws Exception {
+		MultivaluedMap<String, Object> result = new MultivaluedHashMap<>();
+		String headerValue = "Basic " + 
+				Base64.getEncoder().encodeToString(
+						(config.getDcExport().getConfluenceUser() + ":" + config.getDcExport().getConfluencePassword())
+							.getBytes(ENCODDING));
+		List<Object> values = new ArrayList<>();
+		values.add(headerValue);
+		result.put("Authorization", values);
+		return result;
+	}
+	
+	public static Response webRequest(
+			Config config,
+			String scheme,
+			String domain,
+			String path,
+			String method,
+			Collection<Cookie> cookies,
+			MultivaluedMap<String, Object> headers, 
+			Map<String, Object> queryParameters, 
+			Object data,
+			int... successStatuses) throws Exception {
+		Client client = ClientBuilder.newClient();
+		client.register(JACKSON_JSON_PROVIDER);
+		URI uri = new URI(scheme + "://" + domain).resolve(path);
+		WebTarget target = client.target(uri);
+		Log.debug(LOGGER, "uri: " + uri.toASCIIString() + " " + method);
+		if (queryParameters != null) {
+			for (Map.Entry<String, Object> query : queryParameters.entrySet()) {
+				Log.debug(LOGGER, "query: " + query.getKey() + " = " + query.getValue());
+				target = target.queryParam(query.getKey(), query.getValue());
+			}
+		}
+		Builder builder = target.request();
+		if (headers != null) {
+			builder = builder.headers(headers);
+			for (Map.Entry<String, List<Object>> header : headers.entrySet()) {
+				for (Object o : header.getValue()) {
+					Log.debug(LOGGER, "header: " + header.getKey() + " = " + o);
+				}
+			}
+		}
+		if (cookies != null) {
+			for (Cookie cookie : cookies) {
+				builder = builder.cookie(cookie);
+			}
+		}
+		Response response = null;
+		switch (method) {
+		case HttpMethod.DELETE:
+			response = builder.delete();
+			break;
+		case HttpMethod.GET:
+			response = builder.get();
+			break;
+		case HttpMethod.HEAD:
+			response = builder.head();
+			break;
+		case HttpMethod.OPTIONS:
+			response = builder.options();
+			break;
+		case HttpMethod.POST:
+			if (data != null && String.class.isAssignableFrom(data.getClass())) {
+				response = builder.post(Entity.entity(data, MediaType.TEXT_PLAIN));
+			} else {
+				response = builder.post(Entity.entity(data, MediaType.APPLICATION_JSON));
+			}
+			break;
+		case HttpMethod.PUT:
+			if (data != null && String.class.isAssignableFrom(data.getClass())) {
+				response = builder.post(Entity.entity(data, MediaType.TEXT_PLAIN));
+			} else {
+				response = builder.put(Entity.entity(data, MediaType.APPLICATION_JSON));
+			}
+			break;
+		default:
+			throw new Exception("Invalid method \"" + method + "\"");
+		}
+		boolean success = false;
+		int status = response.getStatus();
+		Log.debug(LOGGER, uri.toASCIIString() + " status = " + status);
+		if (successStatuses != null && successStatuses.length != 0) {
+			for (int successStatus : successStatuses) {
+				if (successStatus == status) {
+					success = true;
+					break;
+				}
+			}
+		} else {
+			success = (status == HttpStatus.SC_OK);
+		}
+		if (!success) {
+			String body = response.readEntity(String.class);
+			throw new Exception("HTTP Resposne: " + status + ", message: " + body);
+		}
+		return response;
+	}
+	
 	public static <T> List<T> invokeRestCore(
 			Class<T> templateClass,
 			Config config, 
+			String scheme,
+			String domain, 
 			String path, 
 			String method, 
 			MultivaluedMap<String, Object> headers, 
@@ -77,7 +192,7 @@ public class RESTUtil {
 		List<T> result = new ArrayList<>();
 		Client client = ClientBuilder.newClient();
 		client.register(JACKSON_JSON_PROVIDER);
-		URI uri = new URI(SCHEME + config.getCloud().getDomain()).resolve(path);
+		URI uri = new URI(scheme + domain).resolve(path);
 		WebTarget target = client.target(uri);
 		Log.debug(LOGGER, "uri: " + uri.toASCIIString() + " " + method);
 		if (queryParameters != null) {
@@ -131,10 +246,18 @@ public class RESTUtil {
 			response = builder.options();
 			break;
 		case HttpMethod.POST:
-			response = builder.post(Entity.entity(data, MediaType.APPLICATION_JSON));
+			if (data != null && String.class.isAssignableFrom(data.getClass())) {
+				response = builder.post(Entity.entity(data, MediaType.TEXT_PLAIN));
+			} else {
+				response = builder.post(Entity.entity(data, MediaType.APPLICATION_JSON));
+			}
 			break;
 		case HttpMethod.PUT:
-			response = builder.put(Entity.entity(data, MediaType.APPLICATION_JSON));
+			if (data != null && String.class.isAssignableFrom(data.getClass())) {
+				response = builder.post(Entity.entity(data, MediaType.TEXT_PLAIN));
+			} else {
+				response = builder.put(Entity.entity(data, MediaType.APPLICATION_JSON));
+			}
 			break;
 		default:
 			throw new Exception("Invalid method \"" + method + "\"");
@@ -167,8 +290,7 @@ public class RESTUtil {
 		}
 	}
 	
-	// Generic REST API invoke
-	public static <T> List<T> invokeRest(
+	public static <T> List<T> invokeCloudRest(
 			Class<T> templateClass,
 			Config config, 
 			String path, 
@@ -178,14 +300,65 @@ public class RESTUtil {
 			Object data,
 			String startAtParameter,
 			int... successStatuses) throws Exception {
-		List<T> result = new ArrayList<>();		
+		return invokeRest(
+				templateClass, config, SCHEME, config.getCloud().getDomain(), 
+				path, method, headers, queryParameters, data, startAtParameter, successStatuses);
+	}
+	
+	public static <T> List<T> invokeDCConfluenceRest(
+			Class<T> templateClass,
+			Config config, 
+			String path, 
+			String method, 
+			MultivaluedMap<String, Object> headers, 
+			Map<String, Object> queryParameters, 
+			Object data,
+			String startAtParameter,
+			int... successStatuses) throws Exception {
+		return invokeRest(
+				templateClass, config, 
+				config.getDcExport().getConfluenceScheme(), config.getDcExport().getConfluenceHost(),
+				path, method, headers, queryParameters, data, startAtParameter, successStatuses);
+	}
+	
+	public static <T> List<T> invokeDCJiraRest(
+			Class<T> templateClass,
+			Config config, 
+			String path, 
+			String method, 
+			MultivaluedMap<String, Object> headers, 
+			Map<String, Object> queryParameters, 
+			Object data,
+			String startAtParameter,
+			int... successStatuses) throws Exception {
+		return invokeRest(
+				templateClass, config, 
+				config.getDcExport().getJiraScheme(), config.getDcExport().getJiraHost(),
+				path, method, headers, queryParameters, data, startAtParameter, successStatuses);
+	}
+	
+	// Generic REST API invoke
+	public static <T> List<T> invokeRest(
+			Class<T> templateClass,
+			Config config, 
+			String scheme,
+			String domain, 
+			String path, 
+			String method, 
+			MultivaluedMap<String, Object> headers, 
+			Map<String, Object> queryParameters, 
+			Object data,
+			String startAtParameter,
+			int... successStatuses) throws Exception {
+		List<T> result = new ArrayList<>();
 		if (Linked.class.isAssignableFrom(templateClass)) {
 			boolean hasNext = false;
 			Map<String, Object> nextParameters = new HashMap<>();
 			nextParameters.putAll(queryParameters);
 			do {
 				List<T> items = invokeRestCore(
-						templateClass, config, path, method, headers, nextParameters, data, successStatuses);
+						templateClass, config, scheme, domain, path, method, 
+						headers, nextParameters, data, successStatuses);
 				if (items != null) {
 					result.addAll(items);
 				}
@@ -212,7 +385,8 @@ public class RESTUtil {
 			int startAt = 0;
 			do {
 				List<T> items = invokeRestCore(
-						templateClass, config, path, method, headers, nextParameters, data);
+						templateClass, config, scheme, domain, 
+						path, method, headers, nextParameters, data);
 				if (items != null) {
 					result.addAll(items);
 				}
@@ -246,7 +420,9 @@ public class RESTUtil {
 				}
 			} while (hasNext);			
 		} else {
-			List<T> items = invokeRestCore(templateClass, config, path, method, headers, queryParameters, data);
+			List<T> items = invokeRestCore(
+					templateClass, config, scheme, domain,
+					path, method, headers, queryParameters, data);
 			if (items != null) {
 				result.addAll(items);
 			}

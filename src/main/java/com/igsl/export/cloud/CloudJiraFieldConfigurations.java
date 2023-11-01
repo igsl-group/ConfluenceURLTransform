@@ -57,7 +57,7 @@ public class CloudJiraFieldConfigurations extends BaseExport<JiraFieldConfigurat
 					conf.getDescription(),
 					Boolean.toString(conf.isIsDefault())
 					);
-			result.add(new ObjectData(conf.getId(), conf.getName(), list));
+			result.add(new ObjectData(conf.getId(), conf.getName(), COL_LIST, list));
 		}
 		return result;
 	}

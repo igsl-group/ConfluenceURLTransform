@@ -63,10 +63,8 @@ public class CloudConfluenceAttachments extends BaseExport<ConfluenceAttachments
 			String uniqueKey = ObjectData.createUniqueKey(
 					attachment.getPage().getSpaceKey(),
 					attachment.getPage().getTitle(),
-					Integer.toString(attachment.getPage().getVersion().getNumber()),
-					attachment.getTitle(),
-					Integer.toString(attachment.getVersion().getNumber()));
-			result.add(new ObjectData(attachment.getId(), uniqueKey, list));
+					attachment.getTitle());
+			result.add(new ObjectData(attachment.getId(), uniqueKey, COL_LIST, list));
 		}
 		return result;
 	}
@@ -93,7 +91,6 @@ public class CloudConfluenceAttachments extends BaseExport<ConfluenceAttachments
 				}
 			}
 		}
-		// TODO Attachment version?		
 		return result;
 	}
 

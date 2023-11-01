@@ -48,7 +48,7 @@ public class CloudJiraProjectCategories extends BaseExport<JiraProjectCategory> 
 	protected List<ObjectData> getCSVRows(JiraProjectCategory obj) {
 		List<ObjectData> result = new ArrayList<>();
 		List<String> list = Arrays.asList(obj.getId(), obj.getName(), obj.getDescription());
-		result.add(new ObjectData(obj.getId(), obj.getName(), list));
+		result.add(new ObjectData(obj.getId(), obj.getName(), COL_LIST, list));
 		return result;
 	}
 

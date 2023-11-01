@@ -49,7 +49,7 @@ public class CloudJiraSLAs extends BaseExport<JiraSLAs> {
 		for (JiraSLA sla : obj.getTimeMetrics()) {
 			List<String> list = Arrays.asList(sla.getId(), sla.getProjectKey(), sla.getName());
 			String uniqueKey = ObjectData.createUniqueKey(sla.getProjectKey(), sla.getName());
-			result.add(new ObjectData(sla.getId(), uniqueKey, list));
+			result.add(new ObjectData(sla.getId(), uniqueKey, COL_LIST, list));
 		}
 		return result;
 	}

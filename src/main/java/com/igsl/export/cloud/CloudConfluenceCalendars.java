@@ -63,7 +63,7 @@ public class CloudConfluenceCalendars extends BaseExport<ConfluenceCalendars> {
 				List<String> list = Arrays.asList(
 						cal.getId(), cal.getName(), cal.getDescription(), cal.getSpaceKey(), cal.getSpaceName());
 				String uniqueKey = ObjectData.createUniqueKey(cal.getSpaceKey(), cal.getName(), cal.getDescription());
-				result.add(new ObjectData(cal.getId(), uniqueKey, list));
+				result.add(new ObjectData(cal.getId(), uniqueKey, COL_LIST, list));
 			}
 		}
 		return result;

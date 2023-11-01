@@ -69,7 +69,7 @@ public class CloudJiraAttachments extends BaseExport<JiraIssues> {
 							attachment.getAuthor().getAccountId(),
 							attachment.getAuthor().getName());
 					String uniqueKey = ObjectData.createUniqueKey(issue.getKey(), attachment.getFilename());
-					result.add(new ObjectData(attachment.getId(), uniqueKey, list));
+					result.add(new ObjectData(attachment.getId(), uniqueKey, COL_LIST, list));
 				}
 			}
 		}

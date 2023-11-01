@@ -1,37 +1,48 @@
 {
     "cloud": {
-        "domain": "pccwglobal.atlassian.net",
-        "userName": null,
+        "domain": "kcwong.atlassian.net",
+        "userName": "kc.wong@igsl-group.com",
         "apiToken": null,
         "rate": 100,
         "period": 1000
     },
-    "postMigrate": {
-        "performUpdate": false
-    },
     "connections": {
-        "confluenceConnectionString": "jdbc:mysql://localhost:3307/test",
+        "confluenceConnectionString": "jdbc:mysql://localhost:3307/confluence",
         "confluenceUser": "root",
         "confluencePassword": null, 
         "jiraConnectionString": "jdbc:mysql://localhost:3307/jira",
         "jiraUser": "root",
         "jiraPassword": null
     },
+    "dcExport": {
+        "confluenceScheme": "https",
+        "confluenceHost": "wiki.pccwglobal.com",
+        "confluenceUser": null,
+        "confluencePassword": null,
+        "jiraScheme": "https",
+        "jiraHost": "jira.pccwglobal.com",
+        "jiraUser": null,
+        "jiraPassword": null
+    },
+    "blueprint": {
+        "performUpdate": false
+    },
     "urlTransform": {
         "performUpdate": false,
         "defaultScheme": "https",
         "fromSchemeRegex": "https?",
         "toScheme": "https",
-        "confluenceFromHost": "wiki.pccwglobal.com",
+        "confluenceFromHost": "localhost:8090",
         "confluenceFromBasePath": "",
-        "confluenceToHost": "pccwglobal.atlassian.net",
+        "confluenceToHost": "kcwong.atlassian.net",
         "confluenceToBasePath": "/wiki",
-        "jiraFromHost": "jira.pccwglobal.com",
+        "jiraFromHost": "localhost:8080",
         "jiraFromBasePath": "",
-        "jiraToHost": "pccwglobal.atlassian.net",
+        "jiraToHost": "kcwong.atlassian.net",
         "jiraToBasePath": "/jira"
     },
-    "dcExport": {
+    "postMigrate": {
+         "performUpdate": false
     },
     "handler": {
         "dc": [

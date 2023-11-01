@@ -48,7 +48,7 @@ public class CloudJiraBoards extends BaseExport<JiraBoards> {
 		List<ObjectData> result = new ArrayList<>();
 		for (JiraBoard board : obj.getValues()) {
 			List<String> list = Arrays.asList(board.getId(), board.getName(), board.getType());
-			result.add(new ObjectData(board.getId(), board.getName(), list));
+			result.add(new ObjectData(board.getId(), board.getName(), COL_LIST, list));
 		}
 		return result;
 	}

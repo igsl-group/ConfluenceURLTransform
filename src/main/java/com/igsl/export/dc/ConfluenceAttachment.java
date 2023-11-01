@@ -7,11 +7,15 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import com.igsl.Log;
 import com.igsl.ObjectData;
 
 public class ConfluenceAttachment extends ObjectExport {
 
+	private static final Logger LOGGER = LogManager.getLogger(ConfluenceAttachment.class);
 	private static final String SQL = 
 			"SELECT c.CONTENTID, c.VERSION, c.TITLE, " + 
 			"p.VERSION AS PAGE_VERSION, p.TITLE AS PAGE_TITLE, " + 
@@ -19,7 +23,7 @@ public class ConfluenceAttachment extends ObjectExport {
 			"FROM CONTENT c " + 
 			"JOIN CONTENT p ON p.CONTENTID = c.PAGEID AND p.CONTENTTYPE = 'PAGE' AND p.CONTENT_STATUS = 'current' " + 
 			"JOIN SPACES s ON s.SPACEID = c.SPACEID " + 
-			"WHERE c.CONTENTTYPE = 'ATTACHMENT' AND c.CONTENT_STATUS = 'current'";
+			"WHERE c.CONTENTTYPE = 'ATTACHMENT' AND c.CONTENT_STATUS = 'current' AND c.PREVVER IS NULL";
 	public static final String COL_ATTACHMENT_ID = "ATTACHMENTID";
 	public static final String COL_ATTACHMENT_VERSION = "ATTACHMENTVERSION";
 	public static final String COL_ATTACHMENT_NAME = "ATTACHMENTNAME";
@@ -69,12 +73,11 @@ public class ConfluenceAttachment extends ObjectExport {
 
 	@Override
 	protected String getObjectKey(CSVRecord r) throws Exception {
-		String attachmentVersion = r.get(COL_ATTACHMENT_VERSION);
 		String attachmentName = r.get(COL_ATTACHMENT_NAME);
-		String pageVersion = r.get(COL_PAGE_VERSION);
 		String pageName = r.get(COL_PAGENAME);
 		String spaceKey = r.get(COL_SPACEKEY);
-		return ObjectData.createUniqueKey(spaceKey, pageName, pageVersion, attachmentName, attachmentVersion);
+		String uniqueKey = ObjectData.createUniqueKey(spaceKey, pageName, attachmentName);
+		return uniqueKey;
 	}
 
 	@Override

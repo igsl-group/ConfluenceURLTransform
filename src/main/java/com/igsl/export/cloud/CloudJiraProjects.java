@@ -53,7 +53,7 @@ public class CloudJiraProjects extends BaseExport<JiraProjects> {
 		for (JiraProject project : obj.getValues()) {
 			List<String> list = Arrays.asList(
 					project.getId(), project.getKey(), project.getName(), project.getDescription());
-			result.add(new ObjectData(project.getId(), project.getKey(), list));
+			result.add(new ObjectData(project.getId(), project.getKey(), COL_LIST, list));
 		}
 		return result;
 	}

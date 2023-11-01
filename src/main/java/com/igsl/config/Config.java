@@ -14,6 +14,7 @@ public class Config {
 	private URLTransform urlTransform;	
 	private ObjectExport dcExport;
 	private PostMigrate postMigrate;
+	private Blueprint blueprint;
 	@JsonIgnore
 	private Path outputDirectory;
 	@JsonIgnore
@@ -95,16 +96,22 @@ public class Config {
 	public void setUrlExportDirectory(Path urlExportDirectory) {
 		this.urlExportDirectory = urlExportDirectory;
 	}
+	public Handler getHandler() {
+		return handler;
+	}
+	public void setHandler(Handler handler) {
+		this.handler = handler;
+	}
 	public PostMigrate getPostMigrate() {
 		return postMigrate;
 	}
 	public void setPostMigrate(PostMigrate postMigrate) {
 		this.postMigrate = postMigrate;
 	}
-	public Handler getHandler() {
-		return handler;
+	public Blueprint getBlueprint() {
+		return blueprint;
 	}
-	public void setHandler(Handler handler) {
-		this.handler = handler;
+	public void setBlueprint(Blueprint blueprint) {
+		this.blueprint = blueprint;
 	}
 }

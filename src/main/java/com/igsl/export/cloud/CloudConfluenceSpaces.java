@@ -46,7 +46,7 @@ public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
 		List<ObjectData> result = new ArrayList<>();
 		for (ConfluenceSpace space : obj.getResults()) {
 			List<String> list = Arrays.asList(space.getId(), space.getKey(), space.getName());
-			result.add(new ObjectData(space.getId(), space.getKey(), list));
+			result.add(new ObjectData(space.getId(), space.getKey(), COL_LIST, list));
 		}
 		return result;
 	}

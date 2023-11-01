@@ -52,7 +52,7 @@ public abstract class BaseExport<T> {
 	public abstract String getStartAtParameter();
 	
 	protected MultivaluedMap<String, Object> getAuthenticationHeader(Config config) throws Exception {
-		return RESTUtil.getAuthenticationHeader(config);
+		return RESTUtil.getCloudAuthenticationHeader(config);
 	}
 	
 	// Generic REST API invoke
@@ -64,7 +64,7 @@ public abstract class BaseExport<T> {
 			Map<String, Object> queryParameters, 
 			Object data,
 			int... successStatuses) throws Exception {
-		return RESTUtil.invokeRest(
+		return RESTUtil.invokeCloudRest(
 				templateClass, config, 
 				path, method, 
 				headers, queryParameters, 

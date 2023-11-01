@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class URLTransform implements ConfigInterface {
-	// Switch to enable/disable update of BODYCONTENT table
 	private boolean performUpdate;
 	// Default scheme if the URL has none
 	private String defaultScheme;
@@ -65,12 +64,6 @@ public class URLTransform implements ConfigInterface {
 			messages.add("jiraToBasePath is not specified. Please provide Jira Cloud base path, e.g. \"/jira\"");
 		}
 		return messages;
-	}
-	public boolean isPerformUpdate() {
-		return performUpdate;
-	}
-	public void setPerformUpdate(boolean performUpdate) {
-		this.performUpdate = performUpdate;
 	}
 	public String getDefaultScheme() {
 		return defaultScheme;
@@ -137,5 +130,11 @@ public class URLTransform implements ConfigInterface {
 	}
 	public void setJiraToBasePath(String jiraToBasePath) {
 		this.jiraToBasePath = jiraToBasePath;
+	}
+	public boolean isPerformUpdate() {
+		return performUpdate;
+	}
+	public void setPerformUpdate(boolean performUpdate) {
+		this.performUpdate = performUpdate;
 	}
 }

@@ -54,7 +54,7 @@ public class CloudConfluenceBlueprints extends BaseExport<ConfluencePageTemplate
 					page.getReferencingBlueprint(),
 					page.getBody().getStorage().getValue());
 			String uniqueKey = page.getName();
-			result.add(new ObjectData(page.getTemplateId(), uniqueKey, list));
+			result.add(new ObjectData(page.getTemplateId(), uniqueKey, COL_LIST, list));
 		}
 		return result;
 	}

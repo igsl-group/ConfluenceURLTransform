@@ -67,7 +67,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 					page.getSpaceKey());
 			String uniqueKey = ObjectData.createUniqueKey(
 					page.getSpaceKey(), page.getTitle(), Integer.toString(page.getVersion().getNumber()));
-			result.add(new ObjectData(page.getId(), uniqueKey, list));
+			result.add(new ObjectData(page.getId(), uniqueKey, COL_LIST, list));
 		}
 		return result;
 	}
@@ -95,7 +95,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 					while (version > 1) { 
 						version--;
 						query.put("version", version);
-						List<ConfluencePage> versionList = RESTUtil.invokeRest(
+						List<ConfluencePage> versionList = RESTUtil.invokeCloudRest(
 								ConfluencePage.class, 
 								config, 
 								"/wiki/api/v2/pages/" + page.getId(), 

@@ -64,7 +64,7 @@ public class CloudJiraFilters extends BaseExport<JiraFilters> {
 					(filter.getOwner() != null)? filter.getOwner().getDisplayName() : null,
 					filter.getJql()
 					);
-			result.add(new ObjectData(filter.getId(), filter.getName(), list));
+			result.add(new ObjectData(filter.getId(), filter.getName(), COL_LIST, list));
 		}
 		return result;
 	}

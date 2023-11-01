@@ -1,6 +1,6 @@
 package com.igsl.config;
 
-public class PostMigrate {
+public class Blueprint {
 	private boolean performUpdate;
 	public boolean isPerformUpdate() {
 		return performUpdate;

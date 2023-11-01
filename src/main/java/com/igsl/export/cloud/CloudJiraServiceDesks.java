@@ -58,7 +58,7 @@ public class CloudJiraServiceDesks extends BaseExport<JiraServiceDesks> {
 					desk.getProjectName(),
 					desk.getProjectKey()
 					);
-			result.add(new ObjectData(desk.getId(), desk.getProjectKey(), list));
+			result.add(new ObjectData(desk.getId(), desk.getProjectKey(), COL_LIST, list));
 		}
 		return result;
 	}

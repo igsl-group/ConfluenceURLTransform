@@ -57,7 +57,7 @@ public class CloudJiraDashboards extends BaseExport<JiraDashboards> {
 					(board.getOwner() != null)? board.getOwner().getAccountId() : null,
 					(board.getOwner() != null)? board.getOwner().getDisplayName() : null
 					);
-			result.add(new ObjectData(board.getId(), board.getName(), list));
+			result.add(new ObjectData(board.getId(), board.getName(), COL_LIST, list));
 		}
 		return result;
 	}

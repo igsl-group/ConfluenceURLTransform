@@ -6,9 +6,6 @@
         "rate": 100,
         "period": 1000
     },
-    "postMigrate": {
-        "performUpdate": false
-    },
     "connections": {
         "confluenceConnectionString": "jdbc:mysql://localhost:3307/confluence",
         "confluenceUser": null,
@@ -16,6 +13,19 @@
         "jiraConnectionString": "jdbc:mysql://localhost:3307/jira",
         "jiraUser": null,
         "jiraPassword": null
+    },
+    "dcExport": {
+        "confluenceScheme": "http",
+        "confluenceHost": "localhost:8090",
+        "confluenceUser": "admin",
+        "confluencePassword": "admin",
+        "jiraScheme": "http",
+        "jiraHost": "localhost:8080",
+        "jiraUser": "admin",
+        "jiraPassword": "admin"
+    },
+    "blueprint": {
+        "performUpdate": false
     },
     "urlTransform": {
         "performUpdate": false,
@@ -31,7 +41,8 @@
         "jiraToHost": "kcwong.atlassian.net",
         "jiraToBasePath": "/jira"
     },
-    "dcExport": {
+    "postMigrate": {
+         "performUpdate": false
     },
     "handler": {
         "dc": [

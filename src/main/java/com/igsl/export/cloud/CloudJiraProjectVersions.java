@@ -55,7 +55,7 @@ public class CloudJiraProjectVersions extends BaseExport<JiraProjectVersions> {
 		for (JiraProjectVersion ver : obj.getValues()) {
 			List<String> list = Arrays.asList(ver.getId(), ver.getName(), ver.getDescription(), obj.getProject().getKey());
 			String uniqueKey = ObjectData.createUniqueKey(obj.getProject().getKey(), ver.getName());
-			result.add(new ObjectData(ver.getId(), uniqueKey, list));
+			result.add(new ObjectData(ver.getId(), uniqueKey, COL_LIST, list));
 		}
 		return result;
 	}

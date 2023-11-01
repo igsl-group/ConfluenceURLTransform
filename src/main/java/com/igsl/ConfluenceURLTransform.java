@@ -23,7 +23,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.NewCookie;
+import javax.ws.rs.core.Response;
 
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -44,8 +47,10 @@ import com.igsl.export.cloud.CloudConfluenceSpaces;
 import com.igsl.export.cloud.model.ConfluenceBody;
 import com.igsl.export.cloud.model.ConfluenceBodyType;
 import com.igsl.export.cloud.model.ConfluencePage;
+import com.igsl.export.cloud.model.ConfluencePageTemplate;
 import com.igsl.export.cloud.model.ConfluencePages;
 import com.igsl.export.cloud.model.ConfluenceVersion;
+import com.igsl.export.dc.ConfluenceBlueprint;
 import com.igsl.export.dc.ObjectExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
@@ -54,25 +59,22 @@ import com.igsl.rest.UpdatePage;
 
 public class ConfluenceURLTransform {
 	private static final Logger LOGGER = LogManager.getLogger(ConfluenceURLTransform.class);
-	
+
 	private static final String COMMAND_TRANSFORM_URL = "url";
 	private static final String COMMAND_DC_EXPORT = "dcexport";
 	private static final String COMMAND_CLOUD_EXPORT = "cloudexport";
 	private static final String COMMAND_POST_MIGRATE = "postmigrate";
-	
-	private static final String QUERY = 
-			"SELECT bc.BODYCONTENTID, bc.BODY, s.SPACEKEY, c.TITLE " + 
-			"FROM BODYCONTENT bc " + 
-			"JOIN CONTENT c ON c.CONTENTID = bc.CONTENTID AND c.PREVVER IS NULL " + 
-			"JOIN SPACES s ON s.SPACEID = c.SPACEID " + 
-			"WHERE bc.BODY LIKE '%href=\"%'";
-	private static final String UPDATE = 
-			"UPDATE BODYCONTENT SET BODY = ? WHERE BODYCONTENTID = ?";
-	private static final ObjectMapper OM_CONFIG = JsonMapper.builder()
-			.enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+	private static final String COMMAND_MIGRATE_BLUEPRINT = "blueprint";
+	private static final String COMMAND_TEST = "test";
+
+	private static final String QUERY = "SELECT bc.BODYCONTENTID, bc.BODY, s.SPACEKEY, c.TITLE "
+			+ "FROM BODYCONTENT bc " + "JOIN CONTENT c ON c.CONTENTID = bc.CONTENTID AND c.PREVVER IS NULL "
+			+ "JOIN SPACES s ON s.SPACEID = c.SPACEID " + "WHERE bc.BODY LIKE '%href=\"%'";
+	private static final String UPDATE = "UPDATE BODYCONTENT SET BODY = ? WHERE BODYCONTENTID = ?";
+	private static final ObjectMapper OM_CONFIG = JsonMapper.builder().enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
 			.build();
-	private static final Pattern URL_PATTERN = 
-			Pattern.compile("(<a\\s+(?:[^>]*?)?href\\s*=\\s*([\"']))(.*?)(\\2(?:[^>]*?)>(.*?)<\\/a>)");
+	private static final Pattern URL_PATTERN = Pattern
+			.compile("(<a\\s+(?:[^>]*?)?href\\s*=\\s*([\"']))(.*?)(\\2(?:[^>]*?)>(.*?)<\\/a>)");
 	// Capturing groups 1 + 3 + 4 forms the whole pattern
 	private static final int GROUP_BEFORE_HREF = 1;
 	private static final int GROUP_HREF = 3;
@@ -82,7 +84,7 @@ public class ConfluenceURLTransform {
 	private static final String OUTPUT_URL_UPDATED = "URL Updated.csv";
 	private static final String OUTPUT_URL_IGNORED = "URL Ignored.csv";
 	private static final String OUTPUT_PAGE_POST_MIGRATE = "Post Migrate.csv";
-	
+
 	private static void closeConnection(Connection conn) {
 		if (conn != null) {
 			try {
@@ -92,16 +94,16 @@ public class ConfluenceURLTransform {
 			}
 		}
 	}
-	
+
 	private static void urlTransform(Config config) {
-		int pageCount = 0;	// No. of pages found with URLs
-		int pageUpdatedCount = 0;	// No. of pages updated
-		int pagePostMigrateCount = 0;	// No. of pages requiring post migration
-		int urlCount = 0;	// No. of URLs found
-		int urlError = 0;	// No. of invalid URLs
-		int urlIgnoredCount = 0;	// No. of URLs ignored
-		int urlUpdatedCount = 0;	// No. of URLs updated
-		int urlPostMigrateCount = 0;	// No. of URLs requiring post migration
+		int pageCount = 0; // No. of pages found with URLs
+		int pageUpdatedCount = 0; // No. of pages updated
+		int pagePostMigrateCount = 0; // No. of pages requiring post migration
+		int urlCount = 0; // No. of URLs found
+		int urlError = 0; // No. of invalid URLs
+		int urlIgnoredCount = 0; // No. of URLs ignored
+		int urlUpdatedCount = 0; // No. of URLs updated
+		int urlPostMigrateCount = 0; // No. of URLs requiring post migration
 		try {
 			long startTime = System.currentTimeMillis();
 			if (config.getUrlTransform().isPerformUpdate()) {
@@ -113,26 +115,26 @@ public class ConfluenceURLTransform {
 			String ignoreList = config.getOutputDirectory().resolve(OUTPUT_URL_IGNORED).toFile().getAbsolutePath();
 			String errorList = config.getOutputDirectory().resolve(OUTPUT_URL_ERRORS).toFile().getAbsolutePath();
 			String pageList = config.getOutputDirectory().resolve(OUTPUT_PAGE_POST_MIGRATE).toFile().getAbsolutePath();
-			try (
-					CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList), CSV.getCSVWriteFormat(
-							Arrays.asList("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER", "FROM", "TO")));
-					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList), CSV.getCSVWriteFormat(
-							Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL")));
-					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList), CSV.getCSVWriteFormat(
-							Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL", "ERRORMESSAGE", "HANDLER")));
-					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList), CSV.getCSVWriteFormat(
-							Arrays.asList("SPACEKEY", "TITLE")));
-				) {
+			try (CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList),
+					CSV.getCSVWriteFormat(Arrays.asList("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER",
+							"FROM", "TO")));
+					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList),
+							CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL")));
+					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList),
+							CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL",
+									"ERRORMESSAGE", "HANDLER")));
+					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList),
+							CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE")));) {
 				Log.info(LOGGER, "URLs updated will be written to: " + urlList);
 				Log.info(LOGGER, "URLs ignored will be written to: " + ignoreList);
 				Log.info(LOGGER, "Ignored URL list will be written to: " + errorList);
-				Log.info(LOGGER, "Page requiring post migrate will be written to: " +  pageList);
+				Log.info(LOGGER, "Page requiring post migrate will be written to: " + pageList);
 				// Create handlers
 				List<Handler> handlers = new ArrayList<>();
 				for (String handlerName : config.getHandler().getUrlTransform()) {
 					try {
-						Handler h = (Handler) Class.forName(handlerName)
-								.getDeclaredConstructor(Config.class).newInstance(config);
+						Handler h = (Handler) Class.forName(handlerName).getDeclaredConstructor(Config.class)
+								.newInstance(config);
 						handlers.add(h);
 					} catch (Exception ex) {
 						Log.error(LOGGER, "Unable to create handler " + handlerName, ex);
@@ -169,54 +171,45 @@ public class ConfluenceURLTransform {
 											switch (hr.getResultType()) {
 											case ERROR:
 												urlError++;
-												CSV.printRecord(errorPrinter, spaceKey, title, id, urlString, hr.getErrorMessage(), handlerName);
+												CSV.printRecord(errorPrinter, spaceKey, title, id, urlString,
+														hr.getErrorMessage(), handlerName);
 												break;
-											case TAG: 
+											case TAG:
 												accepted = true;
 												changed = true;
 												urlUpdatedCount++;
-												Log.debug(LOGGER, 
-														handler.getClass() + ": " + 
-														"ID: [" + id + "] " + 
-														"From: [" + tag + "] " + 
-														"To: [" + hr.getTag() + "]");
+												Log.debug(LOGGER, handler.getClass() + ": " + "ID: [" + id + "] "
+														+ "From: [" + tag + "] " + "To: [" + hr.getTag() + "]");
 												// Replace the whole match
 												matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
-												CSV.printRecord(urlPrinter, 
-														handler.needPostMigrate(), spaceKey, title, id, 
-														handler.getClass(),
-														tag, hr.getTag());
+												CSV.printRecord(urlPrinter, handler.needPostMigrate(), spaceKey, title,
+														id, handler.getClass(), tag, hr.getTag());
 												break;
-											case URI: 
+											case URI:
 												accepted = true;
 												changed = true;
 												urlUpdatedCount++;
-												String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
-												Log.debug(LOGGER, 
-														handler.getClass() + ": " + 
-														"ID: [" + id + "] " + 
-														"From URL: [" + urlString + "] " + 
-														"Decoded URL: [" + urlDecoded + "] " + 
-														"Path: [" + uri.getPath() + "] " + 
-														"Query: [" + uri.getQuery() + "] " + 
-														"To URL: [" + hr.getUri().toString() + "] " +  
-														"To Escaped URL: [" + resultUrl + "]");
+												String resultUrl = StringEscapeUtils
+														.escapeHtml4(hr.getUri().toString());
+												Log.debug(LOGGER,
+														handler.getClass() + ": " + "ID: [" + id + "] " + "From URL: ["
+																+ urlString + "] " + "Decoded URL: [" + urlDecoded
+																+ "] " + "Path: [" + uri.getPath() + "] " + "Query: ["
+																+ uri.getQuery() + "] " + "To URL: ["
+																+ hr.getUri().toString() + "] " + "To Escaped URL: ["
+																+ resultUrl + "]");
 												// Replace URL only
-												matcher.appendReplacement(
-														sb, "$" + GROUP_BEFORE_HREF + 
-														Matcher.quoteReplacement(resultUrl) +
-														"$" + GROUP_AFTER_HREF);
-												CSV.printRecord(urlPrinter, 
-														handler.needPostMigrate(), spaceKey, title, id, 
-														handlerName,
-														urlString, resultUrl);
+												matcher.appendReplacement(sb, "$" + GROUP_BEFORE_HREF
+														+ Matcher.quoteReplacement(resultUrl) + "$" + GROUP_AFTER_HREF);
+												CSV.printRecord(urlPrinter, handler.needPostMigrate(), spaceKey, title,
+														id, handlerName, urlString, resultUrl);
 												break;
 											}
 											if (accepted && handler.needPostMigrate()) {
 												postMigrate = true;
 												urlPostMigrateCount++;
 											}
-											break;	// Stop after a handler accepts the URL
+											break; // Stop after a handler accepts the URL
 										}
 									}
 									if (!accepted) {
@@ -227,9 +220,10 @@ public class ConfluenceURLTransform {
 								} catch (Exception ex) {
 									Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
 									urlError++;
-									CSV.printRecord(errorPrinter, spaceKey, title, id, urlString, ex.getMessage(), handlerName);
+									CSV.printRecord(errorPrinter, spaceKey, title, id, urlString, ex.getMessage(),
+											handlerName);
 								}
-							}	// While matcher.find
+							} // While matcher.find
 							matcher.appendTail(sb);
 							if (postMigrate) {
 								pagePostMigrateCount++;
@@ -237,10 +231,8 @@ public class ConfluenceURLTransform {
 							}
 							if (changed) {
 								pageUpdatedCount++;
-								Log.debug(LOGGER, 
-										"ID: " + id + " " + 
-										"Source: [" + body + "] " + 
-										"Result: [" + sb.toString() + "]");
+								Log.debug(LOGGER, "ID: " + id + " " + "Source: [" + body + "] " + "Result: ["
+										+ sb.toString() + "]");
 								if (config.getUrlTransform().isPerformUpdate()) {
 									try (PreparedStatement update = confluenceConn.prepareStatement(UPDATE)) {
 										update.setString(1, sb.toString());
@@ -250,7 +242,8 @@ public class ConfluenceURLTransform {
 											Log.debug(LOGGER, "ID: " + id + " Updated successfully");
 											confluenceConn.commit();
 										} else {
-											Log.debug(LOGGER, "ID: " + id + " Update failed, more than 1 row got updated, rolling back");
+											Log.debug(LOGGER, "ID: " + id
+													+ " Update failed, more than 1 row got updated, rolling back");
 											confluenceConn.rollback();
 										}
 									} catch (Exception ex) {
@@ -260,39 +253,40 @@ public class ConfluenceURLTransform {
 									}
 								}
 								/*
-								 * NOTE: 
-								 * Need to flush cache on content objects or restart server to show new values.
+								 * NOTE: Need to flush cache on content objects or restart server to show new
+								 * values.
 								 * 
-								 * Drafts are also stored in BODYCONTENT and need to be updated.
-								 * Otherwise you will open the editor and see old link values.
-								 * But since drafts are not migrated... leave this for later.
+								 * Drafts are also stored in BODYCONTENT and need to be updated. Otherwise you
+								 * will open the editor and see old link values. But since drafts are not
+								 * migrated... leave this for later.
 								 * 
-								 * Reference: 
-								 * https://confluence.atlassian.com/confkb/how-to-bulk-update-confluence-content-through-the-database-to-replace-old-macros-with-new-ones-1018780615.html
-								 * https://confluence.atlassian.com/confkb/how-do-drafts-work-on-confluence-938043306.html
+								 * Reference:
+								 * https://confluence.atlassian.com/confkb/how-to-bulk-update-confluence-content
+								 * -through-the-database-to-replace-old-macros-with-new-ones-1018780615.html
+								 * https://confluence.atlassian.com/confkb/how-do-drafts-work-on-confluence-
+								 * 938043306.html
 								 * 
 								 * To find the drafts:
-								 * 	
-								  	SELECT cp.CONTENTID, bc.body, c.*
-									FROM CONTENTPROPERTIES cp
-									JOIN CONTENT c ON c.CONTENTID = cp.CONTENTID and c.CONTENT_STATUS = 'draft'
-									JOIN BODYCONTENT bc ON bc.CONTENTID = cp.CONTENTID
-									JOIN CONTENTPROPERTIES cpMain ON cp.STRINGVAL = cpMain.STRINGVAL AND cpMain.PROPERTYNAME = 'share-id'
-									WHERE cp.PROPERTYNAME = 'share-id' 						
-									AND cpMain.CONTENTID = <ID updated>
-									AND cp.CONTENTID != cpMain.CONTENTID;
+								 * 
+								 * SELECT cp.CONTENTID, bc.body, c.* FROM CONTENTPROPERTIES cp JOIN CONTENT c ON
+								 * c.CONTENTID = cp.CONTENTID and c.CONTENT_STATUS = 'draft' JOIN BODYCONTENT bc
+								 * ON bc.CONTENTID = cp.CONTENTID JOIN CONTENTPROPERTIES cpMain ON cp.STRINGVAL
+								 * = cpMain.STRINGVAL AND cpMain.PROPERTYNAME = 'share-id' WHERE cp.PROPERTYNAME
+								 * = 'share-id' AND cpMain.CONTENTID = <ID updated> AND cp.CONTENTID !=
+								 * cpMain.CONTENTID;
 								 * 
 								 * The draft record remains after publishing.
 								 */
-							}	// If changed
-						}	// ResultSet loop
+							} // If changed
+						} // ResultSet loop
 					}
-				}	// Try PreparedStatement
+				} // Try PreparedStatement
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Error", ex);
 			}
 			long stopTime = System.currentTimeMillis();
-			Log.info(LOGGER, "Execution time: From " + startTime + " to " + stopTime + ", elapsed: " + (stopTime - startTime));
+			Log.info(LOGGER,
+					"Execution time: From " + startTime + " to " + stopTime + ", elapsed: " + (stopTime - startTime));
 			Log.info(LOGGER, "Page count: " + pageCount);
 			Log.info(LOGGER, "Page updated: " + pageUpdatedCount);
 			Log.info(LOGGER, "URL count: " + urlCount);
@@ -305,7 +299,7 @@ public class ConfluenceURLTransform {
 			Log.error(LOGGER, "Error", ex);
 		}
 	}
-	
+
 	private static void exportCloudObjects(Config config) throws Exception {
 		String dcDir = Console.readLine("DC Export Directory: ");
 		Path dcPath = Paths.get(dcDir);
@@ -316,8 +310,8 @@ public class ConfluenceURLTransform {
 		List<BaseExport<?>> exporters = new ArrayList<>();
 		for (String exporterName : config.getHandler().getCloud()) {
 			try {
-				BaseExport<?> exporter = (BaseExport<?>) Class.forName(exporterName)
-						.getDeclaredConstructor().newInstance();
+				BaseExport<?> exporter = (BaseExport<?>) Class.forName(exporterName).getDeclaredConstructor()
+						.newInstance();
 				exporters.add(exporter);
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Unable to create Cloud exporter " + exporterName, ex);
@@ -326,22 +320,22 @@ public class ConfluenceURLTransform {
 		for (BaseExport<?> exporter : exporters) {
 			try {
 				Path[] p = exporter.exportObjects(config);
-				Log.info(LOGGER, 
-						exporter.getClass().getSimpleName() + ": objects written to " + p[0].toFile().getAbsolutePath());
-				Log.info(LOGGER, 
-						exporter.getClass().getSimpleName() + ": mappings written to " + p[1].toFile().getAbsolutePath());
+				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": objects written to "
+						+ p[0].toFile().getAbsolutePath());
+				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": mappings written to "
+						+ p[1].toFile().getAbsolutePath());
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Error", ex);
 			}
 		}
 	}
-	
+
 	private static void exportDCObjects(Config config) throws Exception {
-		List<ObjectExport> exporters = new ArrayList<>(); 
+		List<ObjectExport> exporters = new ArrayList<>();
 		for (String exporterName : config.getHandler().getDc()) {
 			try {
-				ObjectExport exporter = (ObjectExport) Class.forName(exporterName)
-						.getDeclaredConstructor().newInstance();
+				ObjectExport exporter = (ObjectExport) Class.forName(exporterName).getDeclaredConstructor()
+						.newInstance();
 				exporters.add(exporter);
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Unable to create DC exporter " + exporterName, ex);
@@ -351,13 +345,14 @@ public class ConfluenceURLTransform {
 			try {
 				exporter.setConfig(config);
 				Path p = exporter.exportObjects();
-				Log.info(LOGGER, exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());
+				Log.info(LOGGER,
+						exporter.getClass().getSimpleName() + ": objects written to " + p.toFile().getAbsolutePath());
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Error", ex);
 			}
 		}
 	}
-	
+
 	private static void postMigrate(Config config) throws Exception {
 		String dcDir = Console.readLine("DC Export Directory: ");
 		Path dcPath = Paths.get(dcDir);
@@ -381,14 +376,14 @@ public class ConfluenceURLTransform {
 		CloudConfluenceSpaces spaces = new CloudConfluenceSpaces();
 		Map<String, String> spaceMapping = spaces.readCloudUniqueKeyToIdMapping(cloudPath);
 		// Read URL post migrate CSV
-		Path postMigrateCSV = Paths.get(
-				config.getUrlExportDirectory().toFile().getAbsolutePath() , OUTPUT_PAGE_POST_MIGRATE);
+		Path postMigrateCSV = Paths.get(config.getUrlExportDirectory().toFile().getAbsolutePath(),
+				OUTPUT_PAGE_POST_MIGRATE);
 		// Initialize handlers
 		List<Handler> handlers = new ArrayList<>();
 		for (String handlerName : config.getHandler().getPostMigrate()) {
 			try {
-				Handler h = (Handler) Class.forName(handlerName)
-						.getDeclaredConstructor(Config.class).newInstance(config);
+				Handler h = (Handler) Class.forName(handlerName).getDeclaredConstructor(Config.class)
+						.newInstance(config);
 				handlers.add(h);
 			} catch (Exception ex) {
 				Log.error(LOGGER, "Unable to create handler " + handlerName, ex);
@@ -397,11 +392,11 @@ public class ConfluenceURLTransform {
 		// Output file
 		Path outputPath = Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), "Cloud URL Updated.csv");
 		// Process post migrate pages
-		try (	FileReader fr = new FileReader(postMigrateCSV.toFile()); 
-				FileWriter output = new FileWriter(outputPath.toFile()); 
+		try (FileReader fr = new FileReader(postMigrateCSV.toFile());
+				FileWriter output = new FileWriter(outputPath.toFile());
 				CSVParser postMigrateList = new CSVParser(fr, CSV.getCSVReadFormat());
-				CSVPrinter outputPrinter = new CSVPrinter(output, CSV.getCSVWriteFormat(
-						Arrays.asList("SPACEKEY", "TITLE", "ERROR", "HANDLER", "FROM", "TO")))) {
+				CSVPrinter outputPrinter = new CSVPrinter(output,
+						CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE", "ERROR", "HANDLER", "FROM", "TO")))) {
 			CloudConfluencePages pages = new CloudConfluencePages();
 			// Read page content
 			for (CSVRecord r : postMigrateList.getRecords()) {
@@ -439,42 +434,37 @@ public class ConfluenceURLTransform {
 									HandlerResult hr = handler.handle(uri, urlText);
 									switch (hr.getResultType()) {
 									case ERROR:
-										CSV.printRecord(outputPrinter, spaceKey, title, 
-												hr.getErrorMessage(), handlerName, urlString, "");
+										CSV.printRecord(outputPrinter, spaceKey, title, hr.getErrorMessage(),
+												handlerName, urlString, "");
 										break;
-									case TAG: 
+									case TAG:
 										accepted = true;
 										changed = true;
-										Log.debug(LOGGER, 
-												handler.getClass() + ": " + 
-												"From: [" + tag + "] " + 
-												"To: [" + hr.getTag() + "]");
+										Log.debug(LOGGER, handler.getClass() + ": " + "From: [" + tag + "] " + "To: ["
+												+ hr.getTag() + "]");
 										// Replace the whole match
 										matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
-										CSV.printRecord(outputPrinter, spaceKey, title, "", handlerName, tag, hr.getTag());
+										CSV.printRecord(outputPrinter, spaceKey, title, "", handlerName, tag,
+												hr.getTag());
 										break;
-									case URI: 
+									case URI:
 										accepted = true;
 										changed = true;
 										String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
-										Log.debug(LOGGER, 
-												handler.getClass() + ": " + 
-												"From URL: [" + urlString + "] " + 
-												"Decoded URL: [" + urlDecoded + "] " + 
-												"Path: [" + uri.getPath() + "] " + 
-												"Query: [" + uri.getQuery() + "] " + 
-												"To URL: [" + hr.getUri().toString() + "] " +  
-												"To Escaped URL: [" + resultUrl + "]");
+										Log.debug(LOGGER,
+												handler.getClass() + ": " + "From URL: [" + urlString + "] "
+														+ "Decoded URL: [" + urlDecoded + "] " + "Path: ["
+														+ uri.getPath() + "] " + "Query: [" + uri.getQuery() + "] "
+														+ "To URL: [" + hr.getUri().toString() + "] "
+														+ "To Escaped URL: [" + resultUrl + "]");
 										// Replace URL only
-										matcher.appendReplacement(
-												sb, "$" + GROUP_BEFORE_HREF + 
-												Matcher.quoteReplacement(resultUrl) +
-												"$" + GROUP_AFTER_HREF);
-										CSV.printRecord(outputPrinter, 
-												spaceKey, title, "", handlerName, urlString, resultUrl);
+										matcher.appendReplacement(sb, "$" + GROUP_BEFORE_HREF
+												+ Matcher.quoteReplacement(resultUrl) + "$" + GROUP_AFTER_HREF);
+										CSV.printRecord(outputPrinter, spaceKey, title, "", handlerName, urlString,
+												resultUrl);
 										break;
 									}
-									break;	// Stop after a handler accepts the URL
+									break; // Stop after a handler accepts the URL
 								}
 							}
 							if (!accepted) {
@@ -483,18 +473,17 @@ public class ConfluenceURLTransform {
 							}
 						} catch (Exception ex) {
 							Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
-							CSV.printRecord(outputPrinter, spaceKey, title, 
-									"Invalid URI: " + ex.getMessage(), handlerName, urlString, "");
+							CSV.printRecord(outputPrinter, spaceKey, title, "Invalid URI: " + ex.getMessage(),
+									handlerName, urlString, "");
 						}
-					}	// While matcher.find
+					} // While matcher.find
 					matcher.appendTail(sb);
 					if (changed) {
 						// Perform update
 						Log.debug(LOGGER, spaceKey + " " + title + " from: " + content);
 						Log.debug(LOGGER, spaceKey + " " + title + " to: " + sb.toString());
 						if (config.getPostMigrate().isPerformUpdate()) {
-							MultivaluedMap<String, Object> authHeader = 
-									RESTUtil.getAuthenticationHeader(config);
+							MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
 							Map<String, Object> query = new HashMap<>();
 							query.put("id", page.getId());
 							query.put("status", "current");
@@ -508,35 +497,117 @@ public class ConfluenceURLTransform {
 							ConfluenceVersion version = page.getVersion();
 							version.setNumber(version.getNumber() + 1);
 							query.put("version", version);
-							RESTUtil.invokeRest(
-									UpdatePage.class, 
-									config, 
-									"/pages/" + page.getId(), 
-									HttpMethod.PUT, 
-									authHeader, 
-									query, 
-									null, 
-									"startAt", 
-									HttpStatus.SC_OK);
+							RESTUtil.invokeCloudRest(UpdatePage.class, config, "/pages/" + page.getId(), HttpMethod.PUT,
+									authHeader, query, null, "startAt", HttpStatus.SC_OK);
 							Log.info(LOGGER, "Page updated: " + page.getId());
 							CSV.printRecord(outputPrinter, spaceKey, title, "Page Updated", "", "", "");
 						}
 					}
 				} else {
-					Log.error(LOGGER, "Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);
+					Log.error(LOGGER,
+							"Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);
 					CSV.printRecord(outputPrinter, spaceKey, title, "Unable to locate page in space", "", "", "");
 				}
 			}
 		}
 	}
+
+	private static void migrateBlueprint(Config config) throws Exception {
+		// Input file
+		String dcDir = Console.readLine("DC Export Directory: ");
+		Path dcPath = Paths.get(dcDir);
+		if (!Files.exists(dcPath) || !Files.isDirectory(dcPath)) {
+			throw new Exception("\"" + dcDir + "\" is not a valid directory");
+		}
+		// Output file
+		Path outputPath = Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), "Blueprint Migrated.csv");
+		// Load DC blue prints
+		ConfluenceBlueprint bp = new ConfluenceBlueprint();
+		List<ObjectData> blueprints = bp.readObjects(dcPath);
+		MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
+		try (FileWriter fw = new FileWriter(outputPath.toFile());
+				CSVPrinter printer = new CSVPrinter(fw,
+						CSV.getCSVWriteFormat(Arrays.asList("ID", "TEMPLATENAME", "RESULT")));) {
+			for (ObjectData blueprint : blueprints) {
+				String id = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_ID);
+				String name = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_NAME);
+				String description = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_DESCRIPTION);
+				String content = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_CONTENT);
+				if (config.getBlueprint().isPerformUpdate()) {
+					// Create in Cloud
+					Map<String, Object> query = new HashMap<>();
+					ConfluencePageTemplate data = new ConfluencePageTemplate();
+					data.setName(name);
+					data.setDescription(description);
+					data.setTemplateType("page");
+					ConfluenceBody body = new ConfluenceBody();
+					ConfluenceBodyType storage = new ConfluenceBodyType();
+					storage.setRepresentation("storage");
+					storage.setValue(content);
+					body.setStorage(storage);
+					data.setBody(body);
+					try {
+						RESTUtil.invokeCloudRest(ConfluencePageTemplate.class, config, "/wiki/rest/api/template",
+								HttpMethod.POST, authHeader, query, data, "startAt", HttpStatus.SC_OK);
+						CSV.printRecord(printer, Arrays.asList(id, name, "Migrated"));
+					} catch (Exception ex) {
+						CSV.printRecord(printer, Arrays.asList(id, name, ex.getMessage()));
+					}
+				} else {
+					CSV.printRecord(printer, Arrays.asList(name, "Skipped"));
+				}
+			}
+		}
+	}
 	
+	private static void test(Config config) throws Exception {
+		Response hit = RESTUtil.webRequest(
+				config, 
+				"https", 
+				"id.atlassian.com", 
+				"/login", 
+				HttpMethod.GET, 
+				null, 
+				null, 
+				null, 
+				null, 
+				HttpStatus.SC_OK);
+		for (Map.Entry<String, NewCookie> entry : hit.getCookies().entrySet()) {
+			Log.debug(
+					LOGGER, 
+					"Cookie: " + entry.getKey() + "=" + 
+					entry.getValue().getValue() + " @ " + entry.getValue().getDomain());
+		}
+		List<Cookie> cookies = new ArrayList<>();
+		for (NewCookie c : hit.getCookies().values()) {
+			cookies.add(c);
+		}
+		Map<String, Object> param = new HashMap<>();
+		param.put("username", "kc.wong@igsl-group.com");
+		param.put("password", "Modron1!");
+		Response login = RESTUtil.webRequest(
+				config, 
+				"https", 
+				"id.atlassian.com", 
+				"/rest/authenticate",
+				HttpMethod.POST, 
+				cookies, 
+				null, 
+				param, 
+				null, 
+				HttpStatus.SC_OK);
+		Log.debug(LOGGER, "Login done");
+	}
+
 	public static void main(String[] args) {
 		if (args.length == 0) {
 			Log.info(LOGGER, "Available Commands: " + 
 					COMMAND_DC_EXPORT + " | " + 
-					COMMAND_CLOUD_EXPORT + " | " + 
 					COMMAND_TRANSFORM_URL + " | " + 
-					COMMAND_POST_MIGRATE);
+					COMMAND_MIGRATE_BLUEPRINT + " | " + 
+					COMMAND_CLOUD_EXPORT + " | " + 
+					COMMAND_POST_MIGRATE + " | " + 
+					COMMAND_TEST);
 			try {
 				String line = Console.readLine("Space-delimited Command(s): ");
 				if (line != null && !line.isBlank()) {
@@ -551,11 +622,17 @@ public class ConfluenceURLTransform {
 			Log.error(LOGGER, "No command provided");
 			return;
 		}
+		boolean needDCAccount = false;
 		boolean needApiToken = false;
 		boolean needConfluenceDB = false;
 		boolean needJiraDB = false;
 		for (String arg : args) {
 			switch (arg.toLowerCase().trim()) {
+			case COMMAND_TEST:
+				break;
+			case COMMAND_MIGRATE_BLUEPRINT:
+				needApiToken = true;
+				break;
 			case COMMAND_POST_MIGRATE:
 				needApiToken = true;
 				break;
@@ -565,11 +642,12 @@ public class ConfluenceURLTransform {
 			case COMMAND_DC_EXPORT:
 				needJiraDB = true;
 				needConfluenceDB = true;
+				needDCAccount = true;
 				break;
 			case COMMAND_TRANSFORM_URL:
 				needConfluenceDB = true;
 				break;
-			default: 
+			default:
 				Log.warn(LOGGER, "Unrecognized command \"" + arg + "\"");
 				break;
 			}
@@ -585,25 +663,26 @@ public class ConfluenceURLTransform {
 			}
 			config.validate();
 			// Output directory
-			Path outputDirectory = Paths.get(
-					System.getProperty("user.dir"), 
+			Path outputDirectory = Paths.get(System.getProperty("user.dir"),
 					new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()));
 			if (!Files.exists(outputDirectory)) {
 				outputDirectory = Files.createDirectories(outputDirectory);
-			} 
+			}
 			if (!Files.isDirectory(outputDirectory)) {
 				throw new Exception("Output directory cannot be created");
-			}		
+			}
 			config.setOutputDirectory(outputDirectory);
 			// Get password
 			if (needConfluenceDB && config.getConnections().getConfluencePassword() == null) {
-				Console.println("For Confluence database at: %1s\n", config.getConnections().getConfluenceConnectionString());
+				Console.println("For Confluence database at: %1s\n",
+						config.getConnections().getConfluenceConnectionString());
 				if (config.getConnections().getConfluenceUser() == null) {
 					config.getConnections().setConfluenceUser(Console.readLine("Confluence User: "));
 				} else {
 					Console.println("Confluence User: %1s", config.getConnections().getConfluenceUser());
 				}
-				config.getConnections().setConfluencePassword(new String(Console.readPassword("Confluence Password: ")));
+				config.getConnections()
+						.setConfluencePassword(new String(Console.readPassword("Confluence Password: ")));
 			}
 			if (needJiraDB && config.getConnections().getJiraPassword() == null) {
 				Console.println("For Jira database at: %1s\n", config.getConnections().getJiraConnectionString());
@@ -613,6 +692,24 @@ public class ConfluenceURLTransform {
 					Console.println("Jira User: %1s", config.getConnections().getJiraUser());
 				}
 				config.getConnections().setJiraPassword(new String(Console.readPassword("Jira Password: ")));
+			}
+			if (needDCAccount && config.getDcExport().getJiraPassword() == null) {
+				Console.println("For Jira server at: %1s\n", config.getDcExport().getJiraHost());
+				if (config.getDcExport().getJiraUser() == null) {
+					config.getDcExport().setJiraUser(Console.readLine("Jira User: "));
+				} else {
+					Console.println("Jira User: %1s", config.getConnections().getJiraUser());
+				}
+				config.getDcExport().setJiraPassword(new String(Console.readPassword("Jira Password: ")));
+			}
+			if (needDCAccount && config.getDcExport().getConfluencePassword() == null) {
+				Console.println("For Confluence server at: %1s\n", config.getDcExport().getConfluenceHost());
+				if (config.getDcExport().getConfluenceUser() == null) {
+					config.getDcExport().setConfluenceUser(Console.readLine("Confluence User: "));
+				} else {
+					Console.println("Confluence User: %1s", config.getConnections().getConfluenceUser());
+				}
+				config.getDcExport().setConfluencePassword(new String(Console.readPassword("Confluence Password: ")));
 			}
 			if (needApiToken && config.getCloud().getApiToken() == null) {
 				Console.println("For Cloud site: %1s", config.getCloud().getDomain());
@@ -625,24 +722,26 @@ public class ConfluenceURLTransform {
 			}
 			// Create DB connections
 			if (needConfluenceDB) {
-				confluenceConn = DriverManager.getConnection(
-						config.getConnections().getConfluenceConnectionString(),
-						config.getConnections().getConfluenceUser(),
-						config.getConnections().getConfluencePassword());
+				confluenceConn = DriverManager.getConnection(config.getConnections().getConfluenceConnectionString(),
+						config.getConnections().getConfluenceUser(), config.getConnections().getConfluencePassword());
 				confluenceConn.setAutoCommit(false);
 				config.getConnections().setConfluenceConnection(confluenceConn);
 			}
 			if (needJiraDB) {
-				jiraConn = DriverManager.getConnection(
-					config.getConnections().getJiraConnectionString(),
-					config.getConnections().getJiraUser(),
-					config.getConnections().getJiraPassword());
+				jiraConn = DriverManager.getConnection(config.getConnections().getJiraConnectionString(),
+						config.getConnections().getJiraUser(), config.getConnections().getJiraPassword());
 				jiraConn.setAutoCommit(false);
 				config.getConnections().setJiraConnection(jiraConn);
 			}
 			// Execute
 			for (String arg : args) {
 				switch (arg.toLowerCase().trim()) {
+				case COMMAND_TEST:
+					test(config);
+					break;
+				case COMMAND_MIGRATE_BLUEPRINT:
+					migrateBlueprint(config);
+					break;
 				case COMMAND_POST_MIGRATE:
 					postMigrate(config);
 					break;

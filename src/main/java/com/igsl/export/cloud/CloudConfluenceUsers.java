@@ -51,7 +51,7 @@ public class CloudConfluenceUsers extends BaseExport<ConfluenceUsers> {
 			ConfluenceUser user = r.getUser();
 			List<String> list = Arrays.asList(
 					user.getAccountId(), user.getEmail(), user.getDisplayName(), user.getPublicName());
-			result.add(new ObjectData(user.getAccountId(), user.getDisplayName(), list));
+			result.add(new ObjectData(user.getAccountId(), user.getDisplayName(), COL_LIST, list));
 		}
 		return result;
 	}

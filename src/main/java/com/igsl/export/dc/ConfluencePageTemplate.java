@@ -11,7 +11,11 @@ import org.apache.commons.csv.CSVRecord;
 public class ConfluencePageTemplate extends ObjectExport {
 
 	private static final String SQL = 
-			"SELECT TEMPLATEID, TEMPLATENAME FROM PAGETEMPLATES WHERE PREVVER IS NULL AND REFMODULEKEY IS NULL";
+			"SELECT TEMPLATEID, TEMPLATENAME " + 
+			"FROM PAGETEMPLATES " + 
+			"WHERE PREVVER IS NULL " + 
+			"AND REFMODULEKEY IS NULL " + 
+			"AND MODULEKEY IS NULL";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_NAME);

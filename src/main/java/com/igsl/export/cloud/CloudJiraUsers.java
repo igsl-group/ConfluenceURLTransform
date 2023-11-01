@@ -44,7 +44,7 @@ public class CloudJiraUsers extends BaseExport<JiraUser> {
 	protected List<ObjectData> getCSVRows(JiraUser obj) {
 		List<ObjectData> result = new ArrayList<>();
 		List<String> list = Arrays.asList(obj.getAccountId(), obj.getDisplayName(), Boolean.toString(obj.isActive()));
-		result.add(new ObjectData(obj.getAccountId(), obj.getDisplayName(), list));
+		result.add(new ObjectData(obj.getAccountId(), obj.getDisplayName(), COL_LIST, list));
 		return result;
 	}
 

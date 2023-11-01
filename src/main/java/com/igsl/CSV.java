@@ -2,6 +2,7 @@ package com.igsl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ public class CSV {
 			.build();
 	}
 	
-	public static CSVFormat getCSVWriteFormat(List<String> headers) {
+	public static CSVFormat getCSVWriteFormat(Collection<String> headers) {
 		CSVFormat fmt = CSVFormat.EXCEL;
 		return fmt.builder()
 			.setDelimiter(",")
@@ -53,7 +54,7 @@ public class CSV {
 			.build();
 	}
 	
-	public static void printRecord(CSVPrinter printer, List<?> args) throws IOException {
+	public static void printRecord(CSVPrinter printer, Collection<?> args) throws IOException {
 		printer.printRecord(args.toArray(new Object[0]));
 	}
 	

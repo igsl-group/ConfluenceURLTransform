@@ -11,10 +11,15 @@ import org.apache.commons.csv.CSVRecord;
 public class ConfluenceBlueprint extends ObjectExport {
 
 	private static final String SQL = 
-			"SELECT TEMPLATEID, TEMPLATENAME FROM PAGETEMPLATES WHERE PREVVER IS NULL AND REFMODULEKEY IS NOT NULL";
+			"SELECT TEMPLATEID, TEMPLATENAME, TEMPLATEDESC, CONTENT " + 
+			"FROM PAGETEMPLATES " + 
+			"WHERE PREVVER IS NULL AND " + 
+			"(REFMODULEKEY IS NOT NULL OR MODULEKEY IS NOT NULL)";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
-	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_NAME);
+	public static final String COL_DESCRIPTION = "DESCRIPTION";
+	public static final String COL_CONTENT = "CONTENT";
+	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_NAME, COL_DESCRIPTION, COL_CONTENT);
 	
 	private PreparedStatement ps;
 	private ResultSet rs;
@@ -36,7 +41,9 @@ public class ConfluenceBlueprint extends ObjectExport {
 		if (rs.next()) {
 			String id = rs.getString(1);
 			String name = rs.getString(2);
-			return Arrays.asList(id, name);
+			String description = rs.getString(3);
+			String content = rs.getString(4);
+			return Arrays.asList(id, name, description, content);
 		}
 		return null;
 	}
