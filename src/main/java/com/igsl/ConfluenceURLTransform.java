@@ -584,7 +584,7 @@ public class ConfluenceURLTransform {
 		}
 		Map<String, Object> param = new HashMap<>();
 		param.put("username", "kc.wong@igsl-group.com");
-		param.put("password", "Modron1!");
+		param.put("password", "");
 		Response login = RESTUtil.webRequest(
 				config, 
 				"https", 
