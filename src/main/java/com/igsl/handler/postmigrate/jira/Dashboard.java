@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.jira;
 
-import java.net.URI;
 import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
@@ -19,13 +18,17 @@ public class Dashboard extends BasePostMigrate {
 	private static final String PAGEID = "pageId";
 	private static final String SELECT_PAGEID = "selectPageId";
 	
-	private static final URLPattern[] PATTERNS = new URLPattern[] {
-		new URLPattern().setPath("/secure/Dashboard.jspa").setQuery(PAGEID, SELECT_PAGEID),
-	};
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
+			new URLPattern().setPath("/secure/Dashboard.jspa").setQuery(PAGEID, SELECT_PAGEID),
+		};
+	}
 	
 	public Dashboard(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(), 
+				config.getUrlTransform().getJiraToHost(), 
+				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraDashboards(), 
@@ -37,18 +40,5 @@ public class Dashboard extends BasePostMigrate {
 					new ParamSetting(Dashboard.class, PAGEID, CloudJiraDashboards.class),
 					new ParamSetting(Dashboard.class, SELECT_PAGEID, CloudJiraDashboards.class)
 				));
-	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		for (URLPattern path : PATTERNS) {
-			if (path.match(uri)) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

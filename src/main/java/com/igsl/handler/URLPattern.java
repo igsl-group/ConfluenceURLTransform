@@ -43,11 +43,13 @@ public class URLPattern {
 	}
 
 	public boolean match(URI uri) {
-		String path = uri.getPath();
-		String query = uri.getQuery();
+		return match(uri.getPath(), uri.getQuery());
+	}
+	
+	public boolean match(String path, String query) {
 		if (query != null) {
 			try {
-				query = Handler.decode(uri.getQuery());
+				query = Handler.decode(query);
 			} catch (UnsupportedEncodingException e) {
 				return false;
 			}

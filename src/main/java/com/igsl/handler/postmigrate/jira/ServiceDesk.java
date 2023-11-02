@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.jira;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -11,12 +10,10 @@ import org.apache.logging.log4j.Logger;
 
 import com.igsl.Log;
 import com.igsl.config.Config;
-import com.igsl.export.cloud.CloudJiraBoards;
 import com.igsl.export.cloud.CloudJiraServiceDesks;
 import com.igsl.handler.URLPattern;
 import com.igsl.handler.postmigrate.BasePostMigrate;
 import com.igsl.handler.postmigrate.MappingSetting;
-import com.igsl.handler.postmigrate.ParamSetting;
 import com.igsl.handler.postmigrate.PathSetting;
 
 public class ServiceDesk extends BasePostMigrate {
@@ -24,13 +21,17 @@ public class ServiceDesk extends BasePostMigrate {
 	private static final Logger LOGGER = LogManager.getLogger(ServiceDesk.class);
 	private static final String BOARD_ID = "rapidView";
 	
-	private static final URLPattern[] PATTERNS = new URLPattern[] {
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
 			new URLPattern().setPath("/servicedesk/customer/portal/[0-9]+.*"),
-	};
+		};
+	}
 	
 	public ServiceDesk(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(), 
+				config.getUrlTransform().getJiraToHost(), 
+				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraServiceDesks(), 
@@ -59,18 +60,5 @@ public class ServiceDesk extends BasePostMigrate {
 					}
 				),
 				null);
-	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		for (URLPattern path : PATTERNS) {
-			if (path.match(uri)) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

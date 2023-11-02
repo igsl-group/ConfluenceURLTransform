@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.confluence;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -26,11 +25,17 @@ public class UserInPath extends BasePostMigrate {
 		return true;
 	}
 
-	private static final URLPattern PATTERN = new URLPattern("/display/~([^?]+)");
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
+			new URLPattern("/display/~([^?]+)"),
+		};
+	}
 	
 	public UserInPath(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(), 
+				config.getUrlTransform().getConfluenceToHost(), 
+				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudConfluenceUsers(), 
@@ -60,52 +65,4 @@ public class UserInPath extends BasePostMigrate {
 				),
 				null);
 	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		if (PATTERN.match(uri)) {
-			return true;
-		}
-		return false;
-	}	
-	
-//	@Override
-//	public HandlerResult handle(URI uri, String text) throws Exception {
-//		// Read mapping
-//		loadMappings();
-//		// Reconstruct URL
-//		URIBuilder parser = new URIBuilder(uri);
-//		List<NameValuePair> params = parser.getQueryParams();
-//		URIBuilder builder = new URIBuilder();
-//		builder.setScheme(config.getUrlTransform().getToScheme());
-//		builder.setHost(config.getUrlTransform().getConfluenceToHost());
-//		String originalPath = uri.getPath();
-//		// Strip base path out of originalPath
-//		if (originalPath.startsWith(config.getUrlTransform().getConfluenceFromBasePath())) {
-//			originalPath = originalPath.substring(config.getUrlTransform().getConfluenceFromBasePath().length());
-//		} 
-//		// Replace username in path with account ID
-//		Matcher m = PATTERN.getPathPattern().matcher(originalPath);
-//		String userName = m.group(1);
-//		StringBuilder sb = new StringBuilder();
-//		if (mappings.get(PARAM_DUMMY).containsKey(userName)) {
-//			String accountId = mappings.get(PARAM_DUMMY).get(userName);
-//			m.appendReplacement(sb, "/display/~" + accountId);			
-//		} else {
-//			Log.warn(LOGGER, "No mapping found for username: " + userName);
-//			m.appendReplacement(sb, "/display/~" + userName);
-//		}		
-//		m.appendTail(sb);		
-//		builder.setPathSegments(addPathSegments(
-//				config.getUrlTransform().getConfluenceToBasePath(),
-//				sb.toString()));
-//		// Restore parameters
-//		builder.setParameters(params);
-//		// Restore fragments
-//		builder.setFragment(uri.getFragment());
-//		return new HandlerResult(builder.build());
-//	}
 }

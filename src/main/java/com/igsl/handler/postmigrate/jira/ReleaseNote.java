@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.jira;
 
-import java.net.URI;
 import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
@@ -20,13 +19,17 @@ public class ReleaseNote extends BasePostMigrate {
 	private static final String PROJECT_ID = "projectId";
 	private static final String VERSION = "version";
 	
-	private static final URLPattern[] PATTERNS = new URLPattern[] {
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
 			new URLPattern().setPath("/secure/ReleaseNote.jspa").setQuery(PROJECT_ID, VERSION),
-	};
+		};
+	}
 	
 	public ReleaseNote(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(), 
+				config.getUrlTransform().getJiraToHost(), 
+				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraProjects(), 
@@ -42,18 +45,5 @@ public class ReleaseNote extends BasePostMigrate {
 					new ParamSetting(ReleaseNote.class, PROJECT_ID, CloudJiraProjects.class),
 					new ParamSetting(ReleaseNote.class, VERSION, CloudJiraProjectVersions.class)
 				));
-	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		for (URLPattern path : PATTERNS) {
-			if (path.match(uri)) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

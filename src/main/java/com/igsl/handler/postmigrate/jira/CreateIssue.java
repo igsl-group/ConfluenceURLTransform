@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.jira;
 
-import java.net.URI;
 import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
@@ -20,14 +19,18 @@ public class CreateIssue extends BasePostMigrate {
 	private static final String PROJECT_ID = "pid";
 	private static final String ISSUE_TYPE = "issuetype";
 	
-	private static final URLPattern[] PATTERNS = new URLPattern[] {
-		new URLPattern().setPath("/secure/CreateIssue.jspa").setQuery(PROJECT_ID, ISSUE_TYPE),
-		new URLPattern().setPath("/secure/CreateIssue!default.jspa").setQuery(PROJECT_ID, ISSUE_TYPE),
-	};
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
+			new URLPattern().setPath("/secure/CreateIssue.jspa").setQuery(PROJECT_ID, ISSUE_TYPE),
+			new URLPattern().setPath("/secure/CreateIssue!default.jspa").setQuery(PROJECT_ID, ISSUE_TYPE)
+		};
+	}
 	
 	public CreateIssue(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(), 
+				config.getUrlTransform().getJiraToHost(), 
+				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraProjects(), 
@@ -43,18 +46,5 @@ public class CreateIssue extends BasePostMigrate {
 					new ParamSetting(CreateIssue.class, PROJECT_ID, CloudJiraProjects.class),
 					new ParamSetting(CreateIssue.class, ISSUE_TYPE, CloudJiraIssueTypes.class)
 				));
-	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		for (URLPattern path : PATTERNS) {
-			if (path.match(uri)) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

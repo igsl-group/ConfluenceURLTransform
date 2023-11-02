@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.confluence;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -24,13 +23,17 @@ public class Display extends BasePostMigrate {
 	private static final String PREVIEW = "preview";
 	private static final String PAGEID = "pageId";
 	
-	private static final URLPattern[] PATTERNS = new URLPattern[] {
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
 			new URLPattern("/display/[^?]+").setQuery(PAGEID, PREVIEW),
-	};
+		};
+	}
 	
 	public Display(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(), 
+				config.getUrlTransform().getConfluenceToHost(), 
+				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudConfluencePages(), 
@@ -73,63 +76,4 @@ public class Display extends BasePostMigrate {
 					}
 				));
 	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		for (URLPattern path : PATTERNS) {
-			if (path.match(uri)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-//	@Override
-//	public HandlerResult handle(URI uri, String text) throws Exception {
-//		loadMappings();
-//		URIBuilder parser = new URIBuilder(uri);
-//		List<NameValuePair> params = parser.getQueryParams();
-//		URIBuilder builder = new URIBuilder();
-//		builder.setScheme(config.getUrlTransform().getToScheme());
-//		builder.setHost(config.getUrlTransform().getConfluenceToHost());
-//		String originalPath = uri.getPath();
-//		// Strip base path out of originalPath
-//		if (originalPath.startsWith(config.getUrlTransform().getConfluenceFromBasePath())) {
-//			originalPath = originalPath.substring(config.getUrlTransform().getConfluenceFromBasePath().length());
-//		} 
-//		// Replace path segments
-//		Matcher m = PREVIEW_PATTER.matcher(originalPath);
-//		if (m.matches()) {
-//			String spaceId = m.group(1);
-//			String pageId = m.group(2);
-//			String attachmentName = m.group(3);
-//			StringBuilder sb = new StringBuilder();
-//			if (mappings.get(SPACE).containsKey(spaceId)) {
-//				spaceId = mappings.get(SPACE).get(spaceId);
-//			} else {
-//				Log.warn(LOGGER, "Mapping not found for spaceId: " + spaceId);
-//			}
-//			if (mappings.get(PAGE).containsKey(pageId)) {
-//				pageId = mappings.get(PAGE).get(pageId);
-//			} else {
-//				Log.warn(LOGGER, "Mapping not found for pageId: " + pageId);
-//			}
-//			m.appendReplacement(sb, "/" + spaceId + "/" + pageId + "/" + attachmentName);
-//			m.appendTail(sb);
-//			builder.setPathSegments(addPathSegments(
-//					config.getUrlTransform().getConfluenceToBasePath(),
-//					sb.toString()));
-//			// Restore parameters
-//			builder.setParameters(params);
-//			// Restore fragments
-//			builder.setFragment(uri.getFragment());
-//			return new HandlerResult(builder.build());
-//		} else {
-//			Log.error(LOGGER, "Preview parameter does not match pattern: " + uri.toASCIIString());
-//			return new HandlerResult(uri);
-//		}
-//	}
 }

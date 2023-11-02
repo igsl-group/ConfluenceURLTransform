@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.confluence;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -25,14 +24,18 @@ public class Calendar extends BasePostMigrate {
 	private static final String CALENDAR_ID = "calendarId";
 	private static final String CALENDAR_NAME = "calendarName";
 	
-	private static final URLPattern[] PATTERNS = new URLPattern[] {
-		new URLPattern().setPath("/calendar/calendarPage.action").setQuery(CALENDAR_ID),
-		new URLPattern().setPath("/display/UTS/calendar/").setQuery(CALENDAR_NAME),
-	};
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
+			new URLPattern().setPath("/calendar/calendarPage.action").setQuery(CALENDAR_ID),
+			new URLPattern().setPath("/display/[^/]+/calendar/").setQuery(CALENDAR_NAME),
+		};
+	}
 	
 	public Calendar(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(),
+				config.getUrlTransform().getConfluenceToHost(),
+				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 							new CloudConfluenceCalendars(), 
@@ -65,18 +68,5 @@ public class Calendar extends BasePostMigrate {
 						CALENDAR_ID, 
 						CloudConfluencePageTemplates.class)
 				));
-	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		for (URLPattern path : PATTERNS) {
-			if (path.match(uri)) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

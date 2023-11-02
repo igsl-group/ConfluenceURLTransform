@@ -25,12 +25,14 @@ import com.igsl.config.Config;
 import com.igsl.export.cloud.BaseExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
+import com.igsl.handler.URLPattern;
 
 public abstract class BasePostMigrate extends Handler {
 
 	private static final Logger LOGGER = LogManager.getLogger(BasePostMigrate.class);
 	
 	protected Pattern hostRegex;
+	protected String basePath;
 	protected List<MappingSetting> mappingSettings = new ArrayList<>();
 	protected List<PathSetting> pathSettings = new ArrayList<>();
 	protected Map<String, ParamSetting> paramSettings = new HashMap<>();
@@ -40,11 +42,13 @@ public abstract class BasePostMigrate extends Handler {
 	public BasePostMigrate(
 			Config config, 
 			String hostRegex, 
+			String basePath,
 			List<MappingSetting> mappingSettings,
 			List<PathSetting> pathSettings, 
 			List<ParamSetting> paramSettings) {
 		super(config);
 		this.hostRegex = Pattern.compile(hostRegex);
+		this.basePath = basePath;
 		if (mappingSettings != null) {
 			this.mappingSettings = mappingSettings;
 		}
@@ -91,19 +95,45 @@ public abstract class BasePostMigrate extends Handler {
 		Log.debug(LOGGER, "loadMappings() done for " + this.getClass().getCanonicalName());
 	}
 	
+	protected abstract URLPattern[] getPatterns();
+	
 	@Override
 	protected boolean _accept(URI uri) {
+		boolean hostMatched = false;
+		boolean basePathMatched = false;
+		boolean pathMatched = false;
 		String host = uri.getHost();
 		if (host == null) {
-			if (hostRegex != null) {
-				return false;
+			if (hostRegex == null) {
+				hostMatched = true;
 			}
-			return true;
 		} else {
 			host += ((uri.getPort() == -1)? "" : ":" + uri.getPort());
-			boolean r = hostRegex.matcher(host).matches();
-			return r;
+			hostMatched = hostRegex.matcher(host).matches();
 		}
+		String path = uri.getPath();
+		String query = uri.getQuery();
+		if (this.basePath != null) {
+			if (path.startsWith(this.basePath)) {
+				path = path.substring(this.basePath.length());
+				Log.debug(LOGGER, this.getClass().getSimpleName() + " removing basePath, path [" + path + "]");
+				basePathMatched = true;
+			} else {
+				Log.debug(LOGGER, this.getClass().getSimpleName() + " path [" + path + "] does not start with " + basePath);
+			}
+		} else {
+			basePathMatched = true;
+		}
+		if (basePathMatched) {
+			for (URLPattern p : getPatterns()) {
+				Log.debug(LOGGER, this.getClass().getSimpleName() + " vs pattern: [" + p.getPathPattern() + "]");
+				if (p.match(path, query)) {
+					pathMatched = true;
+					break;
+				}
+			}
+		}
+		return hostMatched && pathMatched;
 	}
 	
 	@Override
@@ -117,8 +147,10 @@ public abstract class BasePostMigrate extends Handler {
 		builder.setHost(config.getUrlTransform().getConfluenceToHost());
 		String originalPath = uri.getPath();
 		// Remove base path
-		if (originalPath.startsWith(config.getUrlTransform().getConfluenceFromBasePath())) {
-			originalPath = originalPath.substring(config.getUrlTransform().getConfluenceFromBasePath().length());
+		if (this.basePath != null) {
+			if (originalPath.startsWith(this.basePath)) {
+				originalPath = originalPath.substring(this.basePath.length());
+			}
 		}
 		Log.debug(LOGGER, "Path: " + originalPath);
 		// Remap path
@@ -132,21 +164,21 @@ public abstract class BasePostMigrate extends Handler {
 					m.appendReplacement(sb, replacement);
 					m.appendTail(sb);
 					builder.setPathSegments(addPathSegments(
-							config.getUrlTransform().getConfluenceToBasePath(),
+							(this.basePath != null)? this.basePath : "",
 							sb.toString()));
 					Log.debug(LOGGER, "Path changed: [" + originalPath + "] => [" + sb.toString() + "]");
 				} else {
 					Log.warn(LOGGER, 
 							this.getClass().getCanonicalName() + " Path does not match pattern: " + uri.toASCIIString());
 					builder.setPathSegments(addPathSegments(
-							config.getUrlTransform().getConfluenceToBasePath(),
+							(this.basePath != null)? this.basePath : "",
 							originalPath));
 				}
 			}
 		} else {
 			Log.debug(LOGGER, "No PathSetting, path unchanged");
 			builder.setPathSegments(addPathSegments(
-					config.getUrlTransform().getConfluenceToBasePath(),
+					(this.basePath != null)? this.basePath : "",
 					originalPath));
 		}
 		// Remap parameters

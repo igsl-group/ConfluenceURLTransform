@@ -1,6 +1,5 @@
 package com.igsl.handler.postmigrate.jira;
 
-import java.net.URI;
 import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,14 +17,18 @@ public class EditFilter extends BasePostMigrate {
 	private static final Logger LOGGER = LogManager.getLogger(EditFilter.class);
 	private static final String FILTER_ID = "filterId";
 	
-	private static final URLPattern[] PATTERNS = new URLPattern[] {
+	@Override
+	protected URLPattern[] getPatterns() {
+		return new URLPattern[] {
 			new URLPattern().setPath("/secure/EditFilter.jspa").setQuery(FILTER_ID),
 			new URLPattern().setPath("/secure/EditFilter!default.jspa").setQuery(FILTER_ID),
-	};
+		};
+	}
 	
 	public EditFilter(Config config) {
 		super(	config, 
-				config.getUrlTransform().getConfluenceFromHost(), 
+				config.getUrlTransform().getJiraToHost(), 
+				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraFilters(), 
@@ -36,18 +39,5 @@ public class EditFilter extends BasePostMigrate {
 				Arrays.asList(
 					new ParamSetting(EditFilter.class, FILTER_ID, CloudJiraFilters.class)
 				));
-	}
-
-	@Override
-	protected boolean _accept(URI uri) {
-		if (!super._accept(uri)) {
-			return false;
-		}
-		for (URLPattern path : PATTERNS) {
-			if (path.match(uri)) {
-				return true;
-			}
-		}
-		return false;
 	}
 }
