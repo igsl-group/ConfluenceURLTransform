@@ -140,6 +140,7 @@ public abstract class BaseExport<T> {
 		ObjectExport p = getObjectExport();
 		p.setConfig(config);
 		List<ObjectData> dcData = p.readObjects(config.getDcExportDirectory());
+		Log.debug(LOGGER, "ObjectData: " + this.getClass().getSimpleName() + " count: " + dcData.size());
 		Path csvPath = getOutputPath(config);
 		Path mappingPath = getMappingPath(config);
 		List<String> headers = getCSVHeaders();

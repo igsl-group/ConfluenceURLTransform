@@ -1,3 +1,5 @@
 /target/
 /bin/
 **/*.log
+/src/main/config/Config.json
+src/main/config/Config.json

@@ -8,17 +8,27 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+/**
+ * Note: 
+ * This includes both page templates and modified blueprints.
+ * Blueprints are essentially default page templates. 
+ * Once modified they become page templates (except for some flags so the UI list them as modified blueprints).
+ * On Cloud, modified blueprints are treated as page templates.
+ */
 public class ConfluencePageTemplate extends ObjectExport {
 
 	private static final String SQL = 
-			"SELECT TEMPLATEID, TEMPLATENAME " + 
+			"SELECT TEMPLATEID, TEMPLATENAME, TEMPLATEDESC, CONTENT, " + 
+			"CASE WHEN MODULEKEY IS NOT NULL THEN 1 WHEN REFMODULEKEY IS NOT NULL THEN 1 ELSE 0 END AS BLUEPRINT " + 
 			"FROM PAGETEMPLATES " + 
-			"WHERE PREVVER IS NULL " + 
-			"AND REFMODULEKEY IS NULL " + 
-			"AND MODULEKEY IS NULL";
+			"WHERE PREVVER IS NULL";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
-	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_NAME);
+	public static final String COL_DESCRIPTION = "DESCRIPTION";
+	public static final String COL_CONTENT = "CONTENT";
+	public static final String COL_BLUEPRINT = "BLUEPRINT";
+	public static final List<String> COL_LIST = Arrays.asList(
+			COL_ID, COL_NAME, COL_DESCRIPTION, COL_CONTENT, COL_BLUEPRINT);
 	
 	private PreparedStatement ps;
 	private ResultSet rs;
@@ -40,7 +50,10 @@ public class ConfluencePageTemplate extends ObjectExport {
 		if (rs.next()) {
 			String id = rs.getString(1);
 			String name = rs.getString(2);
-			return Arrays.asList(id, name);
+			String desc = rs.getString(3);
+			String content = rs.getString(4);
+			String blueprint = rs.getString(5);
+			return Arrays.asList(id, name, desc, content, blueprint);
 		}
 		return null;
 	}

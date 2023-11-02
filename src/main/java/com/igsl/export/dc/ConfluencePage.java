@@ -15,9 +15,12 @@ public class ConfluencePage extends ObjectExport {
 	private static final String SQL = 
 			"SELECT c.CONTENTID, c.VERSION, c.TITLE, s.SPACEKEY " + 
 			"FROM CONTENT c " + 
-            "JOIN CONTENT p ON p.CONTENTID = c.PREVVER " + 
+			"JOIN " + 
+			"(SELECT TITLE, VERSION, MAX(HIBERNATEVERSION) AS HIBERNATEVERSION FROM CONTENT GROUP BY TITLE, VERSION) v " + 
+			"ON v.TITLE = c.TITLE AND v.HIBERNATEVERSION = c.HIBERNATEVERSION AND v.VERSION = c.VERSION " + 
+            "LEFT JOIN CONTENT p ON p.CONTENTID = c.PREVVER " + 
 			"JOIN SPACES s ON (s.SPACEID = c.SPACEID OR s.SPACEID = p.SPACEID) " + 
-			"WHERE c.CONTENTTYPE = 'PAGE' AND c.CONTENT_STATUS = 'current'";
+			"WHERE c.CONTENTTYPE = 'PAGE' ";
 	public static final String COL_PAGEID = "PAGEID";
 	public static final String COL_PAGEVERSION = "PAGEVERSION";
 	public static final String COL_PAGENAME = "PAGENAME";

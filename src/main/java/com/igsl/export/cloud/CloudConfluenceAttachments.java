@@ -9,6 +9,10 @@ import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.igsl.Log;
 import com.igsl.ObjectData;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.model.ConfluenceAttachment;
@@ -19,6 +23,7 @@ import com.igsl.export.dc.ObjectExport;
 
 public class CloudConfluenceAttachments extends BaseExport<ConfluenceAttachments> {
 
+	private static final Logger LOGGER = LogManager.getLogger(CloudConfluenceAttachments.class);
 	public static final String COL_ID = "ID";
 	public static final String COL_TITLE = "TITLE";
 	public static final String COL_VERSION = "VERSION";
@@ -75,6 +80,11 @@ public class CloudConfluenceAttachments extends BaseExport<ConfluenceAttachments
 		Map<String, Object> query = new HashMap<>();
 		List<ConfluenceAttachments> result = invokeRest(config, 
 				"/wiki/api/v2/attachments", HttpMethod.GET, header, query, null);
+		int size = 0;
+		for (ConfluenceAttachments atts : result) {
+			size += atts.getResults().size();
+		}
+		Log.debug(LOGGER, "Attachment count: " + size);
 		// Resolve page
 		CloudConfluencePages pagesExport = new CloudConfluencePages();
 		List<ConfluencePages> pagesList = pagesExport.getObjects(config);

@@ -1,6 +1,6 @@
 package com.igsl.config;
 
-public class Blueprint {
+public class PageTemplate {
 	private boolean performUpdate;
 	public boolean isPerformUpdate() {
 		return performUpdate;

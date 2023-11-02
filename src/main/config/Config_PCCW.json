@@ -24,7 +24,7 @@
         "jiraUser": null,
         "jiraPassword": null
     },
-    "blueprint": {
+    "pageTemplate": {
         "performUpdate": false
     },
     "urlTransform": {
@@ -47,7 +47,6 @@
     "handler": {
         "dc": [
             "com.igsl.export.dc.ConfluenceAttachment",
-            "com.igsl.export.dc.ConfluenceBlueprint",
             "com.igsl.export.dc.ConfluenceCalendar",
             "com.igsl.export.dc.ConfluencePage",
             "com.igsl.export.dc.ConfluencePageTemplate",
@@ -78,7 +77,6 @@
         ],
         "cloud": [
             "com.igsl.export.cloud.CloudConfluenceAttachments",
-            "com.igsl.export.cloud.CloudConfluenceBlueprints",
             "com.igsl.export.cloud.CloudConfluenceCalendars",
             "com.igsl.export.cloud.CloudConfluencePages",
             "com.igsl.export.cloud.CloudConfluencePageTemplates",

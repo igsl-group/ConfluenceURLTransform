@@ -14,12 +14,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.igsl.ObjectData;
 import com.igsl.config.Config;
-import com.igsl.export.cloud.model.ConfluencePage;
 import com.igsl.export.cloud.model.ConfluencePageTemplate;
 import com.igsl.export.cloud.model.ConfluencePageTemplates;
-import com.igsl.export.cloud.model.ConfluencePages;
-import com.igsl.export.cloud.model.ConfluenceSpace;
-import com.igsl.export.cloud.model.ConfluenceSpaces;
 import com.igsl.export.dc.ObjectExport;
 
 public class CloudConfluencePageTemplates extends BaseExport<ConfluencePageTemplates> {

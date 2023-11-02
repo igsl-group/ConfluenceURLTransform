@@ -110,7 +110,8 @@ public abstract class ObjectExport {
 		Path p = getOutputPath(dir.toFile().getAbsolutePath());
 		try (	FileReader fr = new FileReader(p.toFile()); 
 				CSVParser parser = new CSVParser(fr, CSV.getCSVReadFormat())) {
-			for (CSVRecord r : parser) {
+			List<CSVRecord> list = parser.getRecords();
+			for (CSVRecord r : list) {
 				ObjectData od = new ObjectData(getObjectId(r), getObjectKey(r), r);
 				Log.debug(LOGGER, "ObjectData: " + this.getClass().getSimpleName() + ": " + od.toString());
 				result.add(od);

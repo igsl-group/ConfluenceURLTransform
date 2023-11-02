@@ -23,10 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -50,7 +47,6 @@ import com.igsl.export.cloud.model.ConfluencePage;
 import com.igsl.export.cloud.model.ConfluencePageTemplate;
 import com.igsl.export.cloud.model.ConfluencePages;
 import com.igsl.export.cloud.model.ConfluenceVersion;
-import com.igsl.export.dc.ConfluenceBlueprint;
 import com.igsl.export.dc.ObjectExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
@@ -64,7 +60,7 @@ public class ConfluenceURLTransform {
 	private static final String COMMAND_DC_EXPORT = "dcexport";
 	private static final String COMMAND_CLOUD_EXPORT = "cloudexport";
 	private static final String COMMAND_POST_MIGRATE = "postmigrate";
-	private static final String COMMAND_MIGRATE_BLUEPRINT = "blueprint";
+	private static final String COMMAND_MIGRATE_PAGE_TEMPLATE = "pagetemplate";
 	private static final String COMMAND_TEST = "test";
 
 	private static final String QUERY = "SELECT bc.BODYCONTENTID, bc.BODY, s.SPACEKEY, c.TITLE "
@@ -512,7 +508,7 @@ public class ConfluenceURLTransform {
 		}
 	}
 
-	private static void migrateBlueprint(Config config) throws Exception {
+	private static void migrateTemplate(Config config) throws Exception {
 		// Input file
 		String dcDir = Console.readLine("DC Export Directory: ");
 		Path dcPath = Paths.get(dcDir);
@@ -520,24 +516,31 @@ public class ConfluenceURLTransform {
 			throw new Exception("\"" + dcDir + "\" is not a valid directory");
 		}
 		// Output file
-		Path outputPath = Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), "Blueprint Migrated.csv");
+		Path outputPath = Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), "Page Templates Migrated.csv");
 		// Load DC blue prints
-		ConfluenceBlueprint bp = new ConfluenceBlueprint();
-		List<ObjectData> blueprints = bp.readObjects(dcPath);
+		com.igsl.export.dc.ConfluencePageTemplate pt = new com.igsl.export.dc.ConfluencePageTemplate();
+		List<ObjectData> pageTemplates = pt.readObjects(dcPath);
 		MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
-		try (FileWriter fw = new FileWriter(outputPath.toFile());
+		try (	FileWriter fw = new FileWriter(outputPath.toFile());
 				CSVPrinter printer = new CSVPrinter(fw,
-						CSV.getCSVWriteFormat(Arrays.asList("ID", "TEMPLATENAME", "RESULT")));) {
-			for (ObjectData blueprint : blueprints) {
-				String id = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_ID);
-				String name = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_NAME);
-				String description = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_DESCRIPTION);
-				String content = blueprint.getCsvRecord().get(ConfluenceBlueprint.COL_CONTENT);
-				if (config.getBlueprint().isPerformUpdate()) {
+				CSV.getCSVWriteFormat(Arrays.asList("ID", "TEMPLATENAME", "RESULT")));) {
+			for (ObjectData pageTemplate : pageTemplates) {
+				String id = pageTemplate.getCsvRecord().get(com.igsl.export.dc.ConfluencePageTemplate.COL_ID);
+				String name = pageTemplate.getCsvRecord().get(com.igsl.export.dc.ConfluencePageTemplate.COL_NAME);
+				String description = pageTemplate.getCsvRecord().get(com.igsl.export.dc.ConfluencePageTemplate.COL_DESCRIPTION);
+				String content = pageTemplate.getCsvRecord().get(com.igsl.export.dc.ConfluencePageTemplate.COL_CONTENT);
+				boolean blueprint = 
+					"1".equals(pageTemplate.getCsvRecord().get(com.igsl.export.dc.ConfluencePageTemplate.COL_BLUEPRINT));
+				if (config.getPageTemplate().isPerformUpdate()) {
 					// Create in Cloud
 					Map<String, Object> query = new HashMap<>();
 					ConfluencePageTemplate data = new ConfluencePageTemplate();
-					data.setName(name);
+					if (blueprint) {
+						// Blueprints gets overrode by system blueprints if they share the same name
+						data.setName(name + " (Migrated)");
+					} else {
+						data.setName(name);
+					}
 					data.setDescription(description);
 					data.setTemplateType("page");
 					ConfluenceBody body = new ConfluenceBody();
@@ -561,42 +564,6 @@ public class ConfluenceURLTransform {
 	}
 	
 	private static void test(Config config) throws Exception {
-		Response hit = RESTUtil.webRequest(
-				config, 
-				"https", 
-				"id.atlassian.com", 
-				"/login", 
-				HttpMethod.GET, 
-				null, 
-				null, 
-				null, 
-				null, 
-				HttpStatus.SC_OK);
-		for (Map.Entry<String, NewCookie> entry : hit.getCookies().entrySet()) {
-			Log.debug(
-					LOGGER, 
-					"Cookie: " + entry.getKey() + "=" + 
-					entry.getValue().getValue() + " @ " + entry.getValue().getDomain());
-		}
-		List<Cookie> cookies = new ArrayList<>();
-		for (NewCookie c : hit.getCookies().values()) {
-			cookies.add(c);
-		}
-		Map<String, Object> param = new HashMap<>();
-		param.put("username", "kc.wong@igsl-group.com");
-		param.put("password", "");
-		Response login = RESTUtil.webRequest(
-				config, 
-				"https", 
-				"id.atlassian.com", 
-				"/rest/authenticate",
-				HttpMethod.POST, 
-				cookies, 
-				null, 
-				param, 
-				null, 
-				HttpStatus.SC_OK);
-		Log.debug(LOGGER, "Login done");
 	}
 
 	public static void main(String[] args) {
@@ -604,7 +571,7 @@ public class ConfluenceURLTransform {
 			Log.info(LOGGER, "Available Commands: " + 
 					COMMAND_DC_EXPORT + " | " + 
 					COMMAND_TRANSFORM_URL + " | " + 
-					COMMAND_MIGRATE_BLUEPRINT + " | " + 
+					COMMAND_MIGRATE_PAGE_TEMPLATE + " | " + 
 					COMMAND_CLOUD_EXPORT + " | " + 
 					COMMAND_POST_MIGRATE + " | " + 
 					COMMAND_TEST);
@@ -630,7 +597,7 @@ public class ConfluenceURLTransform {
 			switch (arg.toLowerCase().trim()) {
 			case COMMAND_TEST:
 				break;
-			case COMMAND_MIGRATE_BLUEPRINT:
+			case COMMAND_MIGRATE_PAGE_TEMPLATE:
 				needApiToken = true;
 				break;
 			case COMMAND_POST_MIGRATE:
@@ -739,8 +706,8 @@ public class ConfluenceURLTransform {
 				case COMMAND_TEST:
 					test(config);
 					break;
-				case COMMAND_MIGRATE_BLUEPRINT:
-					migrateBlueprint(config);
+				case COMMAND_MIGRATE_PAGE_TEMPLATE:
+					migrateTemplate(config);
 					break;
 				case COMMAND_POST_MIGRATE:
 					postMigrate(config);

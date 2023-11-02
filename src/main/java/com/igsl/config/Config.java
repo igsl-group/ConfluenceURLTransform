@@ -14,7 +14,7 @@ public class Config {
 	private URLTransform urlTransform;	
 	private ObjectExport dcExport;
 	private PostMigrate postMigrate;
-	private Blueprint blueprint;
+	private PageTemplate pageTemplate;
 	@JsonIgnore
 	private Path outputDirectory;
 	@JsonIgnore
@@ -108,10 +108,10 @@ public class Config {
 	public void setPostMigrate(PostMigrate postMigrate) {
 		this.postMigrate = postMigrate;
 	}
-	public Blueprint getBlueprint() {
-		return blueprint;
+	public PageTemplate getPageTemplate() {
+		return pageTemplate;
 	}
-	public void setBlueprint(Blueprint blueprint) {
-		this.blueprint = blueprint;
+	public void setPageTemplate(PageTemplate blueprint) {
+		this.pageTemplate = blueprint;
 	}
 }
