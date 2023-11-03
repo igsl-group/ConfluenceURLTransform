@@ -35,10 +35,26 @@ public abstract class BasePostMigrate extends Handler {
 	
 	protected Pattern hostRegex;
 	protected List<MappingSetting> mappingSettings = new ArrayList<>();
+	protected List<URLSetting> urlSettings = new ArrayList<>();
 	protected List<PathSetting> pathSettings = new ArrayList<>();
 	protected Map<String, ParamSetting> paramSettings = new HashMap<>();
 	protected Map<String, Map<String, String>> mappings = new HashMap<>();
 	protected boolean mappingsLoaded = false;
+	
+	public BasePostMigrate(
+			Config config, 
+			String hostRegex, 
+			List<MappingSetting> mappingSettings,
+			List<URLSetting> urlSettings) {
+		super(config);
+		this.hostRegex = Pattern.compile(hostRegex);
+		if (mappingSettings != null) {
+			this.mappingSettings = mappingSettings;
+		}
+		if (urlSettings != null) {
+			this.urlSettings = urlSettings;
+		}
+	}
 	
 	public BasePostMigrate(
 			Config config, 
@@ -50,6 +66,9 @@ public abstract class BasePostMigrate extends Handler {
 		this.hostRegex = Pattern.compile(hostRegex);
 		if (mappingSettings != null) {
 			this.mappingSettings = mappingSettings;
+		}
+		if (urlSettings != null) {
+			this.urlSettings = urlSettings;
 		}
 		if (pathSettings != null) {
 			this.pathSettings = pathSettings;
@@ -115,7 +134,7 @@ public abstract class BasePostMigrate extends Handler {
 		String path = uri.getPath();
 		String query = uri.getQuery();
 		Log.debug(LOGGER, this.getClass().getSimpleName() + " path: [" + path + "]");
-		Log.debug(LOGGER, this.getClass().getSimpleName() + " query: [" + path + "]");
+		Log.debug(LOGGER, this.getClass().getSimpleName() + " query: [" + query + "]");
 		for (URLPattern p : getPatterns()) {
 			Log.debug(LOGGER, this.getClass().getSimpleName() + " vs pattern: [" + p.getPathPattern() + "]");
 			if (p.match(path, query)) {
@@ -139,59 +158,92 @@ public abstract class BasePostMigrate extends Handler {
 		String originalPath = uri.getPath();
 		Log.debug(LOGGER, "Path: " + originalPath);
 		List<String> messages = new ArrayList<>();
-		// Remap path
-		if (pathSettings.size() != 0) {
-			boolean pathMatched = false;
-			for (PathSetting setting : pathSettings) {
+		// Remap URL
+		if (urlSettings.size() != 0) {
+			boolean urlMatched = false;
+			for (URLSetting setting : urlSettings) {
 				Pattern pattern = setting.getPathPattern();
+				Log.debug(LOGGER, this.getClass().getCanonicalName() + "vs [" + pattern.toString() + "]");
 				Matcher m = pattern.matcher(originalPath);
 				if (m.matches()) {
-					StringBuilder sb = new StringBuilder();
-					String replacement;
+					urlMatched = true;
 					try {
-						replacement = setting.getReplacement(m, mappings);
+						setting.process(originalPath, params, this.mappings);
+						builder.setPathSegments(addPathSegments(setting.getPath()));
+						if (setting.getParameters() != null) {
+							for (Map.Entry<String, String> param : setting.getParameters().entrySet()) {
+								builder.addParameter(param.getKey(), param.getValue());
+							}
+						}
 					} catch (Exception ex) {
-						replacement = "$0";
+						builder.setPath(originalPath);
+						builder.setParameters(params);
 						messages.add(ex.getMessage());
 					}
-					m.appendReplacement(sb, replacement);
-					m.appendTail(sb);
-					builder.setPathSegments(addPathSegments(sb.toString()));
-					Log.debug(LOGGER, "Path changed: [" + originalPath + "] => [" + sb.toString() + "]");
-					pathMatched = true;
 				}
 			}
-			if (!pathMatched) {
+			if (!urlMatched) {
 				Log.warn(LOGGER, 
 						this.getClass().getCanonicalName() + 
-						" Path does not match pattern, path unchanged");
-				builder.setPathSegments(addPathSegments(originalPath));
+						" Path does not match url pattern, path unchanged");
+				builder.setPath(originalPath);
+				builder.setParameters(params);
 			}
 		} else {
-			Log.debug(LOGGER, this.getClass().getCanonicalName() + " No PathSetting, path unchanged");
-			builder.setPathSegments(addPathSegments(originalPath));
-		}
-		// Remap parameters
-		for (NameValuePair param : params) {
-			Log.debug(LOGGER, this.getClass().getCanonicalName() + 
-					" Param: [" + param.getName() + "] = [" + param.getValue() + "]");
-			if (paramSettings.containsKey(param.getName())) {
-				ParamSetting setting = paramSettings.get(param.getName());
-				String replacement;
-				try {
-					replacement = setting.getReplacement(param, mappings);
-				} catch (Exception ex) {
-					replacement = param.getValue();
-					messages.add(ex.getMessage());
+			// Remap path
+			if (pathSettings.size() != 0) {
+				boolean pathMatched = false;
+				for (PathSetting setting : pathSettings) {
+					Pattern pattern = setting.getPathPattern();
+					Matcher m = pattern.matcher(originalPath);
+					if (m.matches()) {
+						StringBuilder sb = new StringBuilder();
+						String replacement;
+						try {
+							replacement = setting.getReplacement(m, mappings);
+						} catch (Exception ex) {
+							replacement = "$0";
+							messages.add(ex.getMessage());
+						}
+						m.appendReplacement(sb, replacement);
+						m.appendTail(sb);
+						builder.setPathSegments(addPathSegments(sb.toString()));
+						Log.debug(LOGGER, "Path changed: [" + originalPath + "] => [" + sb.toString() + "]");
+						pathMatched = true;
+					}
 				}
-				Log.debug(LOGGER, this.getClass().getCanonicalName() + 
-						" Param changed: [" + param.getValue() + "] => [" + replacement + "]");
-				builder.addParameter(setting.getNewParameterName(), replacement);
+				if (!pathMatched) {
+					Log.warn(LOGGER, 
+							this.getClass().getCanonicalName() + 
+							" Path does not match pattern, path unchanged");
+					builder.setPathSegments(addPathSegments(originalPath));
+				}
 			} else {
-				// Add parameter as is
+				Log.debug(LOGGER, this.getClass().getCanonicalName() + " No PathSetting, path unchanged");
+				builder.setPathSegments(addPathSegments(originalPath));
+			}
+			// Remap parameters
+			for (NameValuePair param : params) {
 				Log.debug(LOGGER, this.getClass().getCanonicalName() + 
-						" No ParamSetting, param unchanged");
-				builder.addParameter(param.getName(), param.getValue());
+						" Param: [" + param.getName() + "] = [" + param.getValue() + "]");
+				if (paramSettings.containsKey(param.getName())) {
+					ParamSetting setting = paramSettings.get(param.getName());
+					String replacement;
+					try {
+						replacement = setting.getReplacement(param, mappings);
+					} catch (Exception ex) {
+						replacement = param.getValue();
+						messages.add(ex.getMessage());
+					}
+					Log.debug(LOGGER, this.getClass().getCanonicalName() + 
+							" Param changed: [" + param.getValue() + "] => [" + replacement + "]");
+					builder.addParameter(setting.getNewParameterName(), replacement);
+				} else {
+					// Add parameter as is
+					Log.debug(LOGGER, this.getClass().getCanonicalName() + 
+							" No ParamSetting, param unchanged");
+					builder.addParameter(param.getName(), param.getValue());
+				}
 			}
 		}
 		// Add fragment

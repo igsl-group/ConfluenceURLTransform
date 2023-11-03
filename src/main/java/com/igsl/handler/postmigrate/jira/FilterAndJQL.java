@@ -28,20 +28,18 @@ public class FilterAndJQL extends BasePostMigrate {
 		return new URLPattern[] {
 			new URLPattern()
 				.setPath(basePath + "/issues")
-				.setQuery("filter", "jql"),
+				.setQuery(FILTER, JQL),
 			new URLPattern()
 				.setPathRegex(Pattern.quote(basePath) + "/browse/[^/]+")
-				.setQuery("filter", "jql"),
-//			new URLPattern()
-//				.setPath(basePath + "/secure/IssueNavigator.jspa")
-//				.setQuery("filter", "jql"),
+				.setQuery(FILTER, JQL),
+			new URLPattern()
+				.setPath(basePath + "/secure/IssueNavigator.jspa")
+				.setQuery(FILTER, JQL),
 			new URLPattern()
 				.setPathRegex(Pattern.quote(basePath) + "/projects/[^#?]*")
-				.setQuery("filter", "jql"),
+				.setQuery(FILTER, JQL),
 		};
 	}
-	
-	// TODO Fix JQL here or in URLTransform?
 	
 	public FilterAndJQL(Config config) {
 		super(	config, 
@@ -69,7 +67,7 @@ public class FilterAndJQL extends BasePostMigrate {
 							FilterAndJQL.class, 
 							Pattern.compile(
 									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
-									"/browse/(^/)+"),
+									"/browse/([^/])+"),
 							CloudJiraFilters.class) {
 						@Override
 						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
@@ -81,7 +79,19 @@ public class FilterAndJQL extends BasePostMigrate {
 							FilterAndJQL.class, 
 							Pattern.compile(
 									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
-									"/projects/(^#?)*"),
+									"/secure/IssueNavigator.jspa"),
+							CloudJiraFilters.class) {
+						@Override
+						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
+							// Browse link does not start with /jira
+							return "/issues";
+						}
+					},
+					new PathSetting(
+							FilterAndJQL.class, 
+							Pattern.compile(
+									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+									"/projects/([^#?]*)"),
 							CloudJiraFilters.class) {
 						@Override
 						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {

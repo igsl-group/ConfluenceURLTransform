@@ -53,8 +53,8 @@ public class SLA extends BasePostMigrate {
 								String slaId = m.group(2);
 								Map<String, String> mapping = mappings.get(getBaseExport().getCanonicalName());
 								if (mapping.containsKey(slaId)) {
-									// SLA link does not start with /jira
-									return "/servicedesk/projects/$1/sla/custom/" + mapping.get(slaId);
+									return config.getUrlTransform().getJiraToBasePath() + 
+											"/servicedesk/projects/$1/settings/sla/custom/" + mapping.get(slaId);
 								} else {
 									throw new Exception(getPostMigrate().getCanonicalName() + 
 											" Mapping not found for slaId: " + slaId);
