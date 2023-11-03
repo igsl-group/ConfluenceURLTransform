@@ -425,26 +425,33 @@ public class ConfluenceURLTransform {
 							boolean accepted = false;
 							for (Handler handler : handlers) {
 								if (handler.accept(uri)) {
+									accepted = true;
 									handlerName = handler.getClass().getCanonicalName();
 									Log.debug(LOGGER, "Handler " + handlerName + " accepts " + urlString);
 									HandlerResult hr = handler.handle(uri, urlText);
 									switch (hr.getResultType()) {
+									case WARN:
+										CSV.printRecord(outputPrinter, spaceKey, title, 
+												"Warning: " + hr.getErrorMessage(),
+												handlerName, urlString, urlString);
+										break;
 									case ERROR:
-										CSV.printRecord(outputPrinter, spaceKey, title, hr.getErrorMessage(),
-												handlerName, urlString, "");
+										changed = false;
+										CSV.printRecord(outputPrinter, spaceKey, title, 
+												"Error: " + hr.getErrorMessage(),
+												handlerName, urlString, urlString);
 										break;
 									case TAG:
-										accepted = true;
 										changed = true;
-										Log.debug(LOGGER, handler.getClass() + ": " + "From: [" + tag + "] " + "To: ["
-												+ hr.getTag() + "]");
+										Log.debug(LOGGER, handler.getClass() + ": " + 
+												"From: [" + tag + "] " + 
+												"To: [" + hr.getTag() + "]");
 										// Replace the whole match
 										matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
-										CSV.printRecord(outputPrinter, spaceKey, title, "", handlerName, tag,
-												hr.getTag());
+										CSV.printRecord(outputPrinter, spaceKey, title, 
+												"Success", handlerName, tag, hr.getTag());
 										break;
 									case URI:
-										accepted = true;
 										changed = true;
 										String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
 										Log.debug(LOGGER,
@@ -456,13 +463,13 @@ public class ConfluenceURLTransform {
 										// Replace URL only
 										matcher.appendReplacement(sb, "$" + GROUP_BEFORE_HREF
 												+ Matcher.quoteReplacement(resultUrl) + "$" + GROUP_AFTER_HREF);
-										CSV.printRecord(outputPrinter, spaceKey, title, "", handlerName, urlString,
-												resultUrl);
+										CSV.printRecord(outputPrinter, spaceKey, title, 
+												"Success", handlerName, urlString, resultUrl);
 										break;
 									}
 									break; // Stop after a handler accepts the URL
-								}
-							}
+								} // If accepted
+							} // For all handlers
 							if (!accepted) {
 								Log.debug(LOGGER, "No handlers accept " + urlString);
 								CSV.printRecord(outputPrinter, spaceKey, title, "Ignored", "", urlString, urlString);
@@ -482,27 +489,37 @@ public class ConfluenceURLTransform {
 							MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
 							Map<String, Object> query = new HashMap<>();
 							query.put("id", page.getId());
-							query.put("status", "current");
-							query.put("title", page.getTitle());
+							ConfluencePage newPage = new ConfluencePage();
+							newPage.setId(page.getId());
+							newPage.setStatus("current");
+							newPage.setTitle(page.getTitle());
 							ConfluenceBodyType bodyType = new ConfluenceBodyType();
 							bodyType.setRepresentation("storage");
 							bodyType.setValue(sb.toString());
 							ConfluenceBody body = new ConfluenceBody();
 							body.setStorage(bodyType);
-							query.put("body", body);
+							newPage.setBody(body);
 							ConfluenceVersion version = page.getVersion();
 							version.setNumber(version.getNumber() + 1);
-							query.put("version", version);
-							RESTUtil.invokeCloudRest(UpdatePage.class, config, "/pages/" + page.getId(), HttpMethod.PUT,
-									authHeader, query, null, "startAt", HttpStatus.SC_OK);
-							Log.info(LOGGER, "Page updated: " + page.getId());
-							CSV.printRecord(outputPrinter, spaceKey, title, "Page Updated", "", "", "");
+							newPage.setVersion(version);
+							try {
+								RESTUtil.invokeCloudRest(UpdatePage.class, config, 
+										"/wiki/api/v2/pages/" + page.getId(), HttpMethod.PUT,
+										authHeader, query, newPage, "startAt", HttpStatus.SC_OK);
+								Log.info(LOGGER, "Page updated: " + page.getId());
+								CSV.printRecord(outputPrinter, spaceKey, title, 
+										"Page Updated", "N/A", "N/A", "N/A");
+							} catch (Exception ex) {
+								CSV.printRecord(outputPrinter, spaceKey, title, 
+										"Page update failed " + ex.getMessage(), "N/A", "N/A", "N/A");
+							}
 						}
 					}
 				} else {
 					Log.error(LOGGER,
 							"Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);
-					CSV.printRecord(outputPrinter, spaceKey, title, "Unable to locate page in space", "", "", "");
+					CSV.printRecord(outputPrinter, spaceKey, title, 
+							"Unable to locate page in space", "N/A", "N/A", "N/A");
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 package com.igsl.handler.postmigrate.confluence;
 
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,14 +26,17 @@ public class Page extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/createpage.action").setQuery(PAGE_ID)
+			new URLPattern()
+				.setPathRegex(
+						Pattern.quote(config.getUrlTransform().getConfluenceToBasePath()) + 
+						"/pages/createpage.action")
+				.setQuery(PAGE_ID)
 		};
 	}
 	
 	public Page(Config config) {
 		super(	config, 
 				config.getUrlTransform().getConfluenceToHost(), 
-				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudConfluencePages(),
@@ -41,7 +45,7 @@ public class Page extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(new ParamSetting(
-					Page.class, PAGE_ID, CloudConfluencePages.class)
+					Page.class, PAGE_ID, null, CloudConfluencePages.class)
 				));
 	}
 }

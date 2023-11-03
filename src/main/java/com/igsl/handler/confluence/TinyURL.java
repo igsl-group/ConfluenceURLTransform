@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import com.igsl.TinyURLGenerator;
 import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
+import com.igsl.handler.HandlerResultType;
 
 public class TinyURL extends Confluence {
 	private static final Logger LOGGER = LogManager.getLogger(TinyURL.class);
@@ -59,7 +60,7 @@ public class TinyURL extends Confluence {
 					}
 				}
 			} catch (Exception ex) {
-				return new HandlerResult(uri, ex.getMessage());
+				return new HandlerResult(uri, HandlerResultType.ERROR, ex.getMessage());
 			}
 		}
 		return new HandlerResult(uri);

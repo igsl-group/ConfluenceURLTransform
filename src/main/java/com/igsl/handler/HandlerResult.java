@@ -7,10 +7,10 @@ public class HandlerResult {
 	private URI uri;
 	private String tag;
 	private String errorMessage;
-	public HandlerResult(URI uri, String errorMessage) {
+	public HandlerResult(URI uri, HandlerResultType resultType, String errorMessage) {
 		this.uri = uri;
 		this.errorMessage = errorMessage;
-		this.resultType = HandlerResultType.ERROR;
+		this.resultType = resultType;
 	}
 	public HandlerResult(URI uri) {
 		this.uri = uri;

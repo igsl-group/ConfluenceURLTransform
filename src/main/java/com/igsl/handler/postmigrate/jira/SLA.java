@@ -24,14 +24,16 @@ public class SLA extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/servicedesk/admin/[^/]+/sla/custom/[0-9]+"),
+			new URLPattern()
+				.setPathRegex(
+					Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+					"/servicedesk/admin/[^/]+/sla/custom/[0-9]+"),
 		};
 	}
 	
 	public SLA(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraSLAs(), 
@@ -41,19 +43,21 @@ public class SLA extends BasePostMigrate {
 				Arrays.asList(
 					new PathSetting(
 							SLA.class,
-							Pattern.compile("/servicedesk/admin/([^/]+)/sla/custom/([0-9]+)"),
-							CloudJiraFieldConfigurations.class) {
+							Pattern.compile(
+									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+									"/servicedesk/admin/([^/]+)/sla/custom/([0-9]+)"),
+							CloudJiraSLAs.class) {
 							@Override
-							public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) {
+							public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) 
+									throws Exception {
 								String slaId = m.group(2);
 								Map<String, String> mapping = mappings.get(getBaseExport().getCanonicalName());
 								if (mapping.containsKey(slaId)) {
-									return "/servicedesk/admin/$1/sla/custom/" + mapping.get(slaId);
+									// SLA link does not start with /jira
+									return "/servicedesk/projects/$1/sla/custom/" + mapping.get(slaId);
 								} else {
-									Log.warn(LOGGER, 
-											getPostMigrate().getCanonicalName() + 
+									throw new Exception(getPostMigrate().getCanonicalName() + 
 											" Mapping not found for slaId: " + slaId);
-									return m.group(0);
 								}
 							}
 					}

@@ -21,16 +21,20 @@ public class CreateIssue extends BasePostMigrate {
 	
 	@Override
 	protected URLPattern[] getPatterns() {
+		String basePath = config.getUrlTransform().getJiraToBasePath();
 		return new URLPattern[] {
-			new URLPattern().setPath("/secure/CreateIssue.jspa").setQuery(PROJECT_ID, ISSUE_TYPE),
-			new URLPattern().setPath("/secure/CreateIssue!default.jspa").setQuery(PROJECT_ID, ISSUE_TYPE)
+			new URLPattern()
+				.setPath(basePath + "/secure/CreateIssue.jspa")
+				.setQuery(PROJECT_ID, ISSUE_TYPE),
+			new URLPattern()
+				.setPath(basePath + "/secure/CreateIssue!default.jspa")
+				.setQuery(PROJECT_ID, ISSUE_TYPE)
 		};
 	}
 	
 	public CreateIssue(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraProjects(), 
@@ -43,8 +47,8 @@ public class CreateIssue extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(CreateIssue.class, PROJECT_ID, CloudJiraProjects.class),
-					new ParamSetting(CreateIssue.class, ISSUE_TYPE, CloudJiraIssueTypes.class)
+					new ParamSetting(CreateIssue.class, PROJECT_ID, null, CloudJiraProjects.class),
+					new ParamSetting(CreateIssue.class, ISSUE_TYPE, null, CloudJiraIssueTypes.class)
 				));
 	}
 }

@@ -24,14 +24,16 @@ public class ServiceDesk extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/servicedesk/customer/portal/[0-9]+.*"),
+			new URLPattern()
+				.setPathRegex(
+						Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+						"/servicedesk/customer/portal/[0-9]+.*"),
 		};
 	}
 	
 	public ServiceDesk(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraServiceDesks(), 
@@ -41,20 +43,21 @@ public class ServiceDesk extends BasePostMigrate {
 				Arrays.asList(
 					new PathSetting(
 							ServiceDesk.class,
-							Pattern.compile("/servicedesk/customer/portal/([0-9]+)(.*)"),
+							Pattern.compile(
+									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+									"/servicedesk/customer/portal/([0-9]+)(.*)"),
 							CloudJiraServiceDesks.class) {						
 						@Override
-						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) {
+						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
 							Map<String, String> mapping = mappings.get(getBaseExport().getCanonicalName());
 							String portalId = m.group(1);
 							if (mapping.containsKey(portalId)) {
 								StringBuilder sb = new StringBuilder();
+								// Note: service desk URL does not start with /jira
 								return "/servicedesk/customer/portal/" + mapping.get(portalId) + "$2";
 							} else {
-								Log.warn(LOGGER, 
-										getPostMigrate().getCanonicalName() + 
+								throw new Exception(getPostMigrate().getCanonicalName() + 
 										" Mapping not found for portalId: " + portalId);
-								return m.group(0);
 							}
 						}
 					}

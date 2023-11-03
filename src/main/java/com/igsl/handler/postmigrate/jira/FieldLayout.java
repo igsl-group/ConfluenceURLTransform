@@ -20,14 +20,16 @@ public class FieldLayout extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/secure/admin/ConfigureFieldLayout!default.jspa").setQuery(ID),
+			new URLPattern()
+				.setPath(config.getUrlTransform().getJiraToBasePath() + 
+						"/secure/admin/ConfigureFieldLayout!default.jspa")
+				.setQuery(ID),
 		};
 	}
 	
 	public FieldLayout(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraFieldConfigurations(), 
@@ -36,7 +38,7 @@ public class FieldLayout extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(FieldLayout.class, ID, CloudJiraFieldConfigurations.class)
+					new ParamSetting(FieldLayout.class, ID, null, CloudJiraFieldConfigurations.class)
 				));
 	}
 }

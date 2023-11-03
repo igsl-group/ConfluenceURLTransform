@@ -22,14 +22,15 @@ public class ReleaseNote extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/secure/ReleaseNote.jspa").setQuery(PROJECT_ID, VERSION),
+			new URLPattern()
+				.setPath(config.getUrlTransform().getJiraToBasePath() + "/secure/ReleaseNote.jspa")
+				.setQuery(PROJECT_ID, VERSION),
 		};
 	}
 	
 	public ReleaseNote(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraProjects(), 
@@ -42,8 +43,8 @@ public class ReleaseNote extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(ReleaseNote.class, PROJECT_ID, CloudJiraProjects.class),
-					new ParamSetting(ReleaseNote.class, VERSION, CloudJiraProjectVersions.class)
+					new ParamSetting(ReleaseNote.class, PROJECT_ID, null, CloudJiraProjects.class),
+					new ParamSetting(ReleaseNote.class, VERSION, null, CloudJiraProjectVersions.class)
 				));
 	}
 }

@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.igsl.config.Config;
 import com.igsl.handler.HandlerResult;
+import com.igsl.handler.HandlerResultType;
 
 public class Download extends Confluence {
 
@@ -65,11 +66,11 @@ public class Download extends Confluence {
 						sb.append("</ac:link>");
 						return new HandlerResult(sb.toString());
 					} else {
-						return new HandlerResult(uri, "Referenced page cannot be found");
+						return new HandlerResult(uri, HandlerResultType.ERROR, "Referenced page cannot be found");
 					}
 				}
 			} catch (Exception ex) {
-				return new HandlerResult(uri, ex.getMessage());
+				return new HandlerResult(uri, HandlerResultType.ERROR, ex.getMessage());
 			}
 		}
 		return new HandlerResult(uri);

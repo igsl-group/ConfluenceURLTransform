@@ -20,14 +20,15 @@ public class RapidBoard extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/secure/RapidBoard.jspa").setQuery("rapidView"),
+			new URLPattern()
+				.setPath(config.getUrlTransform().getJiraToBasePath() + "/secure/RapidBoard.jspa")
+				.setQuery("rapidView"),
 		};
 	}
 	
 	public RapidBoard(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraBoards(), 
@@ -36,7 +37,7 @@ public class RapidBoard extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(RapidBoard.class, BOARD_ID, CloudJiraBoards.class)
+					new ParamSetting(RapidBoard.class, BOARD_ID, null, CloudJiraBoards.class)
 				));
 	}
 }

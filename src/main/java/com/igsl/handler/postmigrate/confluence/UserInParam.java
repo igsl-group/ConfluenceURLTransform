@@ -26,17 +26,23 @@ public class UserInParam extends BasePostMigrate {
 
 	@Override
 	protected URLPattern[] getPatterns() {
+		String basePath = config.getUrlTransform().getConfluenceToBasePath();
 		return new URLPattern[] {
-			new URLPattern().setPath("/users/viewuserprofile.action").setQuery("userName"),
-			new URLPattern().setPath("/secure/ViewProfile.jspa").setQuery("name"),
-			new URLPattern().setPath("/admin/users/edituser.action").setQuery("username"),
+			new URLPattern()
+				.setPath(basePath + "/users/viewuserprofile.action")
+				.setQuery("userName"),
+			new URLPattern()
+				.setPath(basePath + "/secure/ViewProfile.jspa")
+				.setQuery("name"),
+			new URLPattern()
+				.setPath(basePath + "/admin/users/edituser.action")
+				.setQuery("username"),
 		};
 	}
 	
 	public UserInParam(Config config) {
 		super(	config, 
 				config.getUrlTransform().getConfluenceToHost(), 
-				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudConfluenceUsers(), 
@@ -45,9 +51,9 @@ public class UserInParam extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(UserInParam.class, PARAM_NAME, CloudConfluenceUsers.class),
-					new ParamSetting(UserInParam.class, PARAM_USERNAME, CloudConfluenceUsers.class),
-					new ParamSetting(UserInParam.class, PARAM_USER_NAME, CloudConfluenceUsers.class)
+					new ParamSetting(UserInParam.class, PARAM_NAME, null, CloudConfluenceUsers.class),
+					new ParamSetting(UserInParam.class, PARAM_USERNAME, null, CloudConfluenceUsers.class),
+					new ParamSetting(UserInParam.class, PARAM_USER_NAME, null, CloudConfluenceUsers.class)
 				));
 	}
 }

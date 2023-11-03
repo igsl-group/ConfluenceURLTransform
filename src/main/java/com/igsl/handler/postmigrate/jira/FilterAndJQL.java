@@ -1,6 +1,9 @@
 package com.igsl.handler.postmigrate.jira;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +14,7 @@ import com.igsl.handler.URLPattern;
 import com.igsl.handler.postmigrate.BasePostMigrate;
 import com.igsl.handler.postmigrate.MappingSetting;
 import com.igsl.handler.postmigrate.ParamSetting;
+import com.igsl.handler.postmigrate.PathSetting;
 
 public class FilterAndJQL extends BasePostMigrate {
 
@@ -20,11 +24,20 @@ public class FilterAndJQL extends BasePostMigrate {
 	
 	@Override
 	protected URLPattern[] getPatterns() {
+		String basePath = config.getUrlTransform().getJiraToBasePath();
 		return new URLPattern[] {
-			new URLPattern().setPath("/issues").setQuery("filter", "jql"),
-			new URLPattern().setPath("/browse").setQuery("filter", "jql"),
-			new URLPattern().setPath("/secure/IssueNavigator.jspa").setQuery("filter", "jql"),
-			new URLPattern().setPathRegex("/projects/[^#?]*").setQuery("filter", "jql"),
+			new URLPattern()
+				.setPath(basePath + "/issues")
+				.setQuery("filter", "jql"),
+			new URLPattern()
+				.setPathRegex(Pattern.quote(basePath) + "/browse/[^/]+")
+				.setQuery("filter", "jql"),
+//			new URLPattern()
+//				.setPath(basePath + "/secure/IssueNavigator.jspa")
+//				.setQuery("filter", "jql"),
+			new URLPattern()
+				.setPathRegex(Pattern.quote(basePath) + "/projects/[^#?]*")
+				.setQuery("filter", "jql"),
 		};
 	}
 	
@@ -33,16 +46,52 @@ public class FilterAndJQL extends BasePostMigrate {
 	public FilterAndJQL(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(),
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraFilters(), 
 						CloudJiraFilters.COL_DCID, 
 						CloudJiraFilters.COL_CLOUDID)
 				),
-				null,
 				Arrays.asList(
-					new ParamSetting(FilterAndJQL.class, FILTER, CloudJiraFilters.class)
+					new PathSetting(
+							FilterAndJQL.class, 
+							Pattern.compile(
+									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+									"/issues"),
+							CloudJiraFilters.class) {
+						@Override
+						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
+							// Issues link does not start with /jira
+							return "/issues";
+						}
+					},
+					new PathSetting(
+							FilterAndJQL.class, 
+							Pattern.compile(
+									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+									"/browse/(^/)+"),
+							CloudJiraFilters.class) {
+						@Override
+						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
+							// Browse link does not start with /jira
+							return "/browse/$1";
+						}
+					},
+					new PathSetting(
+							FilterAndJQL.class, 
+							Pattern.compile(
+									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+									"/projects/(^#?)*"),
+							CloudJiraFilters.class) {
+						@Override
+						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
+							// Browse link does not start with /jira
+							return "/browse/$1";
+						}
+					}
+				),
+				Arrays.asList(
+					new ParamSetting(FilterAndJQL.class, FILTER, null, CloudJiraFilters.class)
 				));
 	}
 }

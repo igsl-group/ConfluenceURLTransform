@@ -20,14 +20,17 @@ public class PageTemplate extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/pages/templates2/viewpagetemplate.action").setQuery(ENTITY_ID)
+			new URLPattern()
+				.setPath(
+					config.getUrlTransform().getConfluenceToBasePath() + 
+					"/pages/templates2/viewpagetemplate.action")
+				.setQuery(ENTITY_ID)
 		};
 	}
 	
 	public PageTemplate(Config config) {
 		super(	config, 
 				config.getUrlTransform().getConfluenceToHost(), 
-				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudConfluencePageTemplates(), 
@@ -36,7 +39,7 @@ public class PageTemplate extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(PageTemplate.class, ENTITY_ID, CloudConfluencePageTemplates.class)
+					new ParamSetting(PageTemplate.class, ENTITY_ID, null, CloudConfluencePageTemplates.class)
 				));
 	}
 }

@@ -26,16 +26,18 @@ public class Calendar extends BasePostMigrate {
 	
 	@Override
 	protected URLPattern[] getPatterns() {
+		String basePath = config.getUrlTransform().getConfluenceToBasePath();
 		return new URLPattern[] {
-			new URLPattern().setPath("/calendar/calendarPage.action").setQuery(CALENDAR_ID),
-			new URLPattern().setPath("/display/[^/]+/calendar/").setQuery(CALENDAR_NAME),
+			new URLPattern()
+				.setPath(basePath + "/calendar/calendarPage.action")
+				.setQuery(CALENDAR_ID),
+			new URLPattern().setPathRegex(Pattern.quote(basePath) + "/display/[^/]+/calendar/[^?]+/?"),
 		};
 	}
 	
 	public Calendar(Config config) {
 		super(	config, 
 				config.getUrlTransform().getConfluenceToHost(),
-				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 							new CloudConfluenceCalendars(), 
@@ -45,19 +47,20 @@ public class Calendar extends BasePostMigrate {
 				Arrays.asList(
 					new PathSetting(
 							Calendar.class, 
-							Pattern.compile("/display/(.+)/calendar/([^?]+)"),
+							Pattern.compile(
+									Pattern.quote(config.getUrlTransform().getConfluenceToBasePath()) + 
+									"/display/([^/]+)/calendar/([^?]+)"),
 							CloudConfluenceCalendars.class) {
 						@Override
-						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) {
+						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
 							Map<String, String> mapping = mappings.get(this.getBaseExport().getCanonicalName());
 							String calendar = m.group(2);
 							if (mapping.containsKey(calendar)) {
-								return "/display/$1/calendar/" + mapping.get(calendar);
+								return config.getUrlTransform().getConfluenceToBasePath() + 
+										"/display/$1/calendar/" + mapping.get(calendar);
 							} else {
-								Log.warn(LOGGER, 
-										getPostMigrate().getCanonicalName() + 
+								throw new Exception(getPostMigrate().getCanonicalName() + 
 										" Mapping not found for calendar: " + calendar);
-								return m.group(0);
 							}
 						}
 					}
@@ -65,8 +68,8 @@ public class Calendar extends BasePostMigrate {
 				Arrays.asList(
 					new ParamSetting(
 						Calendar.class,
-						CALENDAR_ID, 
-						CloudConfluencePageTemplates.class)
+						CALENDAR_ID, null,
+						CloudConfluenceCalendars.class)
 				));
 	}
 }

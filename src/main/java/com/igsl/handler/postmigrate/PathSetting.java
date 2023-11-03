@@ -16,7 +16,7 @@ public abstract class PathSetting {
 		this.pathPattern = pathPattern;
 		this.baseExport = baseExport;
 	}
-	public abstract String getReplacement(Matcher m, Map<String, Map<String, String>> mappings);
+	public abstract String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception;
 	public Pattern getPathPattern() {
 		return pathPattern;
 	}

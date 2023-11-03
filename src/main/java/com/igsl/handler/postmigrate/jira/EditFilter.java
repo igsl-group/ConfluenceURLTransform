@@ -19,16 +19,16 @@ public class EditFilter extends BasePostMigrate {
 	
 	@Override
 	protected URLPattern[] getPatterns() {
+		String basePath = config.getUrlTransform().getJiraToBasePath();
 		return new URLPattern[] {
-			new URLPattern().setPath("/secure/EditFilter.jspa").setQuery(FILTER_ID),
-			new URLPattern().setPath("/secure/EditFilter!default.jspa").setQuery(FILTER_ID),
+			new URLPattern().setPath(basePath + "/secure/EditFilter.jspa").setQuery(FILTER_ID),
+			new URLPattern().setPath(basePath + "/secure/EditFilter!default.jspa").setQuery(FILTER_ID),
 		};
 	}
 	
 	public EditFilter(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraFilters(), 
@@ -37,7 +37,7 @@ public class EditFilter extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(EditFilter.class, FILTER_ID, CloudJiraFilters.class)
+					new ParamSetting(EditFilter.class, FILTER_ID, null, CloudJiraFilters.class)
 				));
 	}
 }

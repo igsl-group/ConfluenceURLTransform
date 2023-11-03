@@ -20,14 +20,15 @@ public class EditProject extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/secure/project/EditProject!default.jspa").setQuery(PROJECT_ID),
+			new URLPattern()
+				.setPath(config.getUrlTransform().getJiraToBasePath() + "/secure/project/EditProject!default.jspa")
+				.setQuery(PROJECT_ID),
 		};
 	}
 	
 	public EditProject(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraProjects(), 
@@ -36,7 +37,7 @@ public class EditProject extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(EditProject.class, PROJECT_ID, CloudJiraProjects.class)
+					new ParamSetting(EditProject.class, PROJECT_ID, null, CloudJiraProjects.class)
 				));
 	}
 }

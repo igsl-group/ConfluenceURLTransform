@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.igsl.Log;
+
 public class URLPattern {
 	private static final Logger LOGGER = LogManager.getLogger(URLPattern.class);
 	private Pattern pathPattern;
@@ -51,21 +53,25 @@ public class URLPattern {
 			try {
 				query = Handler.decode(query);
 			} catch (UnsupportedEncodingException e) {
+				Log.debug(LOGGER, "Failed to decode query: " + e.getMessage());
 				return false;
 			}
 		}
 		if (!pathPattern.matcher(path).matches()) {
+			Log.debug(LOGGER, "Path does not match [" + path + "] vs [" + pathPattern.toString() + "]");
 			return false;
 		}
 		boolean queryMatched = (queryPatterns.size() == 0);
 		if (queryPatterns.size() != 0 && query != null) {
 			for (Pattern p : queryPatterns) {
+				Log.debug(LOGGER, "Query [" + query + "] vs [" + p.toString() + "]");
 				if (p.matcher(query).find()) {
 					queryMatched = true;
 					break;
 				}
 			}
 		}
+		Log.debug(LOGGER, "Query match: " + queryMatched);
 		return queryMatched;
 	}
 

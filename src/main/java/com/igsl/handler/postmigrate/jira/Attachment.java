@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.Log;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.CloudJiraAttachments;
 import com.igsl.handler.URLPattern;
@@ -24,14 +23,15 @@ public class Attachment extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPathRegex("/secure/attachment/(.+)/(.+)")
+			new URLPattern().setPathRegex(
+					Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+					"/secure/attachment/(.+)/(.+)")
 		};
 	}
 	
 	public Attachment(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(),
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraAttachments(), 
@@ -41,20 +41,21 @@ public class Attachment extends BasePostMigrate {
 				Arrays.asList(
 					new PathSetting(
 						Attachment.class,
-						Pattern.compile("/secure/attachment/(.+)/(.+)"),
+						Pattern.compile(
+								Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
+								"/secure/attachment/(.+)/(.+)"),
 						CloudJiraAttachments.class
 						) {
 						@Override
-						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) {
+						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) 
+								throws Exception {
 							Map<String, String> mapping = mappings.get(getBaseExport().getCanonicalName());
 							String attachmentId = m.group(1);
 							if (mapping.containsKey(attachmentId)) {
-								return "/secure/attachment/" + mapping.get(attachmentId) + "/$2";
+								return "/rest/api/3/attachment/content/" + mapping.get(attachmentId);
 							} else {
-								Log.warn(LOGGER, 
-										getPostMigrate().getCanonicalName() + 
+								throw new Exception(getPostMigrate().getCanonicalName() + 
 										" Mapping not found for attachmentId: " + attachmentId);
-								return m.group(0);
 							}
 						}
 					}

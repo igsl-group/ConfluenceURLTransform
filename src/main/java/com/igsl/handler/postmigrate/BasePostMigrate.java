@@ -19,12 +19,14 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.protobuf.Message;
 import com.igsl.CSV;
 import com.igsl.Log;
 import com.igsl.config.Config;
 import com.igsl.export.cloud.BaseExport;
 import com.igsl.handler.Handler;
 import com.igsl.handler.HandlerResult;
+import com.igsl.handler.HandlerResultType;
 import com.igsl.handler.URLPattern;
 
 public abstract class BasePostMigrate extends Handler {
@@ -32,7 +34,6 @@ public abstract class BasePostMigrate extends Handler {
 	private static final Logger LOGGER = LogManager.getLogger(BasePostMigrate.class);
 	
 	protected Pattern hostRegex;
-	protected String basePath;
 	protected List<MappingSetting> mappingSettings = new ArrayList<>();
 	protected List<PathSetting> pathSettings = new ArrayList<>();
 	protected Map<String, ParamSetting> paramSettings = new HashMap<>();
@@ -42,13 +43,11 @@ public abstract class BasePostMigrate extends Handler {
 	public BasePostMigrate(
 			Config config, 
 			String hostRegex, 
-			String basePath,
 			List<MappingSetting> mappingSettings,
 			List<PathSetting> pathSettings, 
 			List<ParamSetting> paramSettings) {
 		super(config);
 		this.hostRegex = Pattern.compile(hostRegex);
-		this.basePath = basePath;
 		if (mappingSettings != null) {
 			this.mappingSettings = mappingSettings;
 		}
@@ -95,12 +94,14 @@ public abstract class BasePostMigrate extends Handler {
 		Log.debug(LOGGER, "loadMappings() done for " + this.getClass().getCanonicalName());
 	}
 	
+	/**
+	 * Return patterns this handler accepts
+	 */
 	protected abstract URLPattern[] getPatterns();
 	
 	@Override
 	protected boolean _accept(URI uri) {
 		boolean hostMatched = false;
-		boolean basePathMatched = false;
 		boolean pathMatched = false;
 		String host = uri.getHost();
 		if (host == null) {
@@ -113,24 +114,14 @@ public abstract class BasePostMigrate extends Handler {
 		}
 		String path = uri.getPath();
 		String query = uri.getQuery();
-		if (this.basePath != null) {
-			if (path.startsWith(this.basePath)) {
-				path = path.substring(this.basePath.length());
-				Log.debug(LOGGER, this.getClass().getSimpleName() + " removing basePath, path [" + path + "]");
-				basePathMatched = true;
-			} else {
-				Log.debug(LOGGER, this.getClass().getSimpleName() + " path [" + path + "] does not start with " + basePath);
-			}
-		} else {
-			basePathMatched = true;
-		}
-		if (basePathMatched) {
-			for (URLPattern p : getPatterns()) {
-				Log.debug(LOGGER, this.getClass().getSimpleName() + " vs pattern: [" + p.getPathPattern() + "]");
-				if (p.match(path, query)) {
-					pathMatched = true;
-					break;
-				}
+		Log.debug(LOGGER, this.getClass().getSimpleName() + " path: [" + path + "]");
+		Log.debug(LOGGER, this.getClass().getSimpleName() + " query: [" + path + "]");
+		for (URLPattern p : getPatterns()) {
+			Log.debug(LOGGER, this.getClass().getSimpleName() + " vs pattern: [" + p.getPathPattern() + "]");
+			if (p.match(path, query)) {
+				pathMatched = true;
+				Log.debug(LOGGER, "Path matched");
+				break;
 			}
 		}
 		return hostMatched && pathMatched;
@@ -146,57 +137,73 @@ public abstract class BasePostMigrate extends Handler {
 		builder.setScheme(config.getUrlTransform().getToScheme());
 		builder.setHost(config.getUrlTransform().getConfluenceToHost());
 		String originalPath = uri.getPath();
-		// Remove base path
-		if (this.basePath != null) {
-			if (originalPath.startsWith(this.basePath)) {
-				originalPath = originalPath.substring(this.basePath.length());
-			}
-		}
 		Log.debug(LOGGER, "Path: " + originalPath);
+		List<String> messages = new ArrayList<>();
 		// Remap path
 		if (pathSettings.size() != 0) {
+			boolean pathMatched = false;
 			for (PathSetting setting : pathSettings) {
 				Pattern pattern = setting.getPathPattern();
 				Matcher m = pattern.matcher(originalPath);
 				if (m.matches()) {
 					StringBuilder sb = new StringBuilder();
-					String replacement = setting.getReplacement(m, mappings);
+					String replacement;
+					try {
+						replacement = setting.getReplacement(m, mappings);
+					} catch (Exception ex) {
+						replacement = "$0";
+						messages.add(ex.getMessage());
+					}
 					m.appendReplacement(sb, replacement);
 					m.appendTail(sb);
-					builder.setPathSegments(addPathSegments(
-							(this.basePath != null)? this.basePath : "",
-							sb.toString()));
+					builder.setPathSegments(addPathSegments(sb.toString()));
 					Log.debug(LOGGER, "Path changed: [" + originalPath + "] => [" + sb.toString() + "]");
-				} else {
-					Log.warn(LOGGER, 
-							this.getClass().getCanonicalName() + " Path does not match pattern: " + uri.toASCIIString());
-					builder.setPathSegments(addPathSegments(
-							(this.basePath != null)? this.basePath : "",
-							originalPath));
+					pathMatched = true;
 				}
 			}
+			if (!pathMatched) {
+				Log.warn(LOGGER, 
+						this.getClass().getCanonicalName() + 
+						" Path does not match pattern, path unchanged");
+				builder.setPathSegments(addPathSegments(originalPath));
+			}
 		} else {
-			Log.debug(LOGGER, "No PathSetting, path unchanged");
-			builder.setPathSegments(addPathSegments(
-					(this.basePath != null)? this.basePath : "",
-					originalPath));
+			Log.debug(LOGGER, this.getClass().getCanonicalName() + " No PathSetting, path unchanged");
+			builder.setPathSegments(addPathSegments(originalPath));
 		}
 		// Remap parameters
 		for (NameValuePair param : params) {
-			Log.debug(LOGGER, "Param: [" + param.getName() + "] = [" + param.getValue() + "]");
+			Log.debug(LOGGER, this.getClass().getCanonicalName() + 
+					" Param: [" + param.getName() + "] = [" + param.getValue() + "]");
 			if (paramSettings.containsKey(param.getName())) {
 				ParamSetting setting = paramSettings.get(param.getName());
-				String replacement = setting.getReplacement(param, mappings);
-				Log.debug(LOGGER, "Param changed: [" + param.getValue() + "] => [" + replacement + "]");
-				builder.addParameter(param.getName(), replacement);
+				String replacement;
+				try {
+					replacement = setting.getReplacement(param, mappings);
+				} catch (Exception ex) {
+					replacement = param.getValue();
+					messages.add(ex.getMessage());
+				}
+				Log.debug(LOGGER, this.getClass().getCanonicalName() + 
+						" Param changed: [" + param.getValue() + "] => [" + replacement + "]");
+				builder.addParameter(setting.getNewParameterName(), replacement);
 			} else {
 				// Add parameter as is
-				Log.debug(LOGGER, "No ParamSetting, param unchanged");
+				Log.debug(LOGGER, this.getClass().getCanonicalName() + 
+						" No ParamSetting, param unchanged");
 				builder.addParameter(param.getName(), param.getValue());
 			}
 		}
 		// Add fragment
 		builder.setFragment(uri.getFragment());
-		return new HandlerResult(builder.build());
+		if (messages.size() == 0) {
+			return new HandlerResult(builder.build());
+		} else {
+			StringBuilder sb = new StringBuilder();
+			for (String msg : messages) {
+				sb.append(msg).append("; ");
+			}
+			return new HandlerResult(builder.build(), HandlerResultType.WARN, sb.toString());
+		}
 	}
 }

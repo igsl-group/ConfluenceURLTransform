@@ -26,14 +26,15 @@ public class Display extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern("/display/[^?]+").setQuery(PAGEID, PREVIEW),
+			new URLPattern()
+				.setPathRegex(Pattern.quote(config.getUrlTransform().getConfluenceToBasePath()) + "/display/[^?]+")
+				.setQuery(PAGEID, PREVIEW),
 		};
 	}
 	
 	public Display(Config config) {
 		super(	config, 
 				config.getUrlTransform().getConfluenceToHost(), 
-				config.getUrlTransform().getConfluenceToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudConfluencePages(), 
@@ -46,12 +47,13 @@ public class Display extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(Display.class, PAGEID, CloudConfluencePages.class),
+					new ParamSetting(Display.class, PAGEID, null, CloudConfluencePages.class),
 					new ParamSetting(
 							Display.class, 
-							PREVIEW, 
+							PREVIEW, null, 
 							CloudConfluencePages.class) {
-						public String getReplacement(NameValuePair param, Map<String, Map<String, String>> mappings) {
+						public String getReplacement(NameValuePair param, Map<String, Map<String, String>> mappings) 
+								throws Exception {
 							Pattern p = Pattern.compile("/([0-9]+)/([0-9]+)/(.+)");
 							Matcher m = p.matcher(param.getValue());
 							Map<String, String> attachmentMap = 
@@ -61,17 +63,25 @@ public class Display extends BasePostMigrate {
 								String pageId = m.group(1);
 								String attachmentId = m.group(2);
 								String attachmentName = m.group(3);
-								if (pageIdMap.containsKey(pageId) && attachmentMap.containsKey(attachmentId)) {
-									StringBuilder sb = new StringBuilder();
-									m.appendReplacement(sb, 
-											"/" + pageIdMap.get(pageId) + 
-											"/" + attachmentMap.get(attachmentId) + 
-											"/" + attachmentName);
-									m.appendTail(sb);
-									return sb.toString();
+								if (!pageIdMap.containsKey(pageId)) {
+									throw new Exception(getPostMigrate().getCanonicalName() + 
+											" Mapping not found for pageId: " + pageId);
 								}
-							} 
-							return param.getValue();
+								if (!attachmentMap.containsKey(attachmentId)) {
+									throw new Exception(getPostMigrate().getCanonicalName() + 
+											" Mapping not found for attachmentId: " + attachmentId);
+								}
+								StringBuilder sb = new StringBuilder();
+								m.appendReplacement(sb, 
+										"/" + pageIdMap.get(pageId) + 
+										"/" + attachmentMap.get(attachmentId) + 
+										"/" + attachmentName);
+								m.appendTail(sb);
+								return sb.toString();
+							} else {
+								throw new Exception(getPostMigrate().getCanonicalName() + 
+										" URL pattern does not match");
+							}
 						}
 					}
 				));

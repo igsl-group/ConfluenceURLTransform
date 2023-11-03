@@ -21,14 +21,15 @@ public class Dashboard extends BasePostMigrate {
 	@Override
 	protected URLPattern[] getPatterns() {
 		return new URLPattern[] {
-			new URLPattern().setPath("/secure/Dashboard.jspa").setQuery(PAGEID, SELECT_PAGEID),
+			new URLPattern()
+				.setPath(config.getUrlTransform().getJiraToBasePath() + "/secure/Dashboard.jspa")
+				.setQuery(PAGEID, SELECT_PAGEID),
 		};
 	}
 	
 	public Dashboard(Config config) {
 		super(	config, 
 				config.getUrlTransform().getJiraToHost(), 
-				config.getUrlTransform().getJiraToBasePath(),
 				Arrays.asList(
 					new MappingSetting(
 						new CloudJiraDashboards(), 
@@ -37,8 +38,8 @@ public class Dashboard extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(
-					new ParamSetting(Dashboard.class, PAGEID, CloudJiraDashboards.class),
-					new ParamSetting(Dashboard.class, SELECT_PAGEID, CloudJiraDashboards.class)
+					new ParamSetting(Dashboard.class, PAGEID, null, CloudJiraDashboards.class),
+					new ParamSetting(Dashboard.class, SELECT_PAGEID, null, CloudJiraDashboards.class)
 				));
 	}
 }
