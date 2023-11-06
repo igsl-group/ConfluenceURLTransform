@@ -1,27 +1,27 @@
 {
     "cloud": {
-        "domain": "kcwong.atlassian.net",
+        "domain": "consoleconnect-sandbox-824.atlassian.net",
         "userName": "kc.wong@igsl-group.com",
         "apiToken": null,
         "rate": 100,
         "period": 1000
     },
     "connections": {
-        "confluenceConnectionString": "jdbc:mysql://localhost:3307/confluence",
-        "confluenceUser": "root",
+        "confluenceConnectionString": "jdbc:mysql://192.168.127.134:3306/confluence",
+        "confluenceUser": "x_igsl_kw",
         "confluencePassword": null, 
-        "jiraConnectionString": "jdbc:mysql://localhost:3307/jira",
-        "jiraUser": "root",
+        "jiraConnectionString": "jdbc:mysql://192.168.127.134:3306/jira",
+        "jiraUser": "x_igsl_kw",
         "jiraPassword": null
     },
     "dcExport": {
         "confluenceScheme": "https",
-        "confluenceHost": "wiki.pccwglobal.com",
-        "confluenceUser": null,
+        "confluenceHost": "wiki-uat.pccwglobal.com",
+        "confluenceUser": "x_igsl_kw",
         "confluencePassword": null,
         "jiraScheme": "https",
-        "jiraHost": "jira.pccwglobal.com",
-        "jiraUser": null,
+        "jiraHost": "jira-uat.pccwglobal.com",
+        "jiraUser": "x_igsl_kw",
         "jiraPassword": null
     },
     "pageTemplate": {
@@ -32,13 +32,13 @@
         "defaultScheme": "https",
         "fromSchemeRegex": "https?",
         "toScheme": "https",
-        "confluenceFromHost": "localhost:8090",
+        "confluenceFromHost": "wiki.pccwglobal.com",
         "confluenceFromBasePath": "",
-        "confluenceToHost": "kcwong.atlassian.net",
+        "confluenceToHost": "consoleconnect-sandbox-824.atlassian.net",
         "confluenceToBasePath": "/wiki",
-        "jiraFromHost": "localhost:8080",
+        "jiraFromHost": "jira.pccwglobal.com",
         "jiraFromBasePath": "",
-        "jiraToHost": "kcwong.atlassian.net",
+        "jiraToHost": "consoleconnect-sandbox-824.atlassian.net",
         "jiraToBasePath": "/jira"
     },
     "postMigrate": {

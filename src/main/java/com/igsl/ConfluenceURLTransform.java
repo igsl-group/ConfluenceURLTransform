@@ -403,126 +403,134 @@ public class ConfluenceURLTransform {
 				pages.setSpaceId(spaceId);
 				pages.setTitle(title);
 				pages.setGetVersions(false);
-				List<ConfluencePages> pagesList = pages.getObjects(config);
-				if (pagesList.size() == 1 && pagesList.get(0).getResults().size() == 1) {
-					// Patch URLs
-					ConfluencePage page = pagesList.get(0).getResults().get(0);
-					String content = page.getBody().getStorage().getValue();
-					Log.debug(LOGGER, "Post migrate page in space " + spaceKey + "(" + spaceId + ") title " + title);
-					Log.debug(LOGGER, "Content: " + content);
-					// Parse content, find URL patterns
-					Matcher matcher = URL_PATTERN.matcher(content);
-					StringBuilder sb = new StringBuilder();
-					boolean changed = false;
-					while (matcher.find()) {
-						String tag = matcher.group(0);
-						String urlString = matcher.group(GROUP_HREF);
-						String urlText = matcher.group(GROUP_TEXT);
-						String handlerName = "N/A";
-						try {
-							String urlDecoded = StringEscapeUtils.unescapeHtml4(urlString);
-							URI uri = new URI(urlDecoded);
-							boolean accepted = false;
-							for (Handler handler : handlers) {
-								if (handler.accept(uri)) {
-									accepted = true;
-									handlerName = handler.getClass().getCanonicalName();
-									Log.debug(LOGGER, "Handler " + handlerName + " accepts " + urlString);
-									HandlerResult hr = handler.handle(uri, urlText);
-									switch (hr.getResultType()) {
-									case WARN:
-										CSV.printRecord(outputPrinter, spaceKey, title, 
-												"Warning: " + hr.getErrorMessage(),
-												handlerName, urlString, urlString);
-										break;
-									case ERROR:
-										changed = false;
-										CSV.printRecord(outputPrinter, spaceKey, title, 
-												"Error: " + hr.getErrorMessage(),
-												handlerName, urlString, urlString);
-										break;
-									case TAG:
-										changed = true;
-										Log.debug(LOGGER, handler.getClass() + ": " + 
-												"From: [" + tag + "] " + 
-												"To: [" + hr.getTag() + "]");
-										// Replace the whole match
-										matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
-										CSV.printRecord(outputPrinter, spaceKey, title, 
-												"Success", handlerName, tag, hr.getTag());
-										break;
-									case URI:
-										changed = true;
-										String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
-										Log.debug(LOGGER,
-												handler.getClass() + ": " + "From URL: [" + urlString + "] "
-														+ "Decoded URL: [" + urlDecoded + "] " + "Path: ["
-														+ uri.getPath() + "] " + "Query: [" + uri.getQuery() + "] "
-														+ "To URL: [" + hr.getUri().toString() + "] "
-														+ "To Escaped URL: [" + resultUrl + "]");
-										// Replace URL only
-										matcher.appendReplacement(sb, "$" + GROUP_BEFORE_HREF
-												+ Matcher.quoteReplacement(resultUrl) + "$" + GROUP_AFTER_HREF);
-										CSV.printRecord(outputPrinter, spaceKey, title, 
-												"Success", handlerName, urlString, resultUrl);
-										break;
-									}
-									break; // Stop after a handler accepts the URL
-								} // If accepted
-							} // For all handlers
-							if (!accepted) {
-								Log.debug(LOGGER, "No handlers accept " + urlString);
-								CSV.printRecord(outputPrinter, spaceKey, title, "Ignored", "", urlString, urlString);
-							}
-						} catch (Exception ex) {
-							Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
-							CSV.printRecord(outputPrinter, spaceKey, title, "Invalid URI: " + ex.getMessage(),
-									handlerName, urlString, "");
-						}
-					} // While matcher.find
-					matcher.appendTail(sb);
-					if (changed) {
-						// Perform update
-						Log.debug(LOGGER, spaceKey + " " + title + " from: " + content);
-						Log.debug(LOGGER, spaceKey + " " + title + " to: " + sb.toString());
-						if (config.getPostMigrate().isPerformUpdate()) {
-							MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
-							Map<String, Object> query = new HashMap<>();
-							query.put("id", page.getId());
-							ConfluencePage newPage = new ConfluencePage();
-							newPage.setId(page.getId());
-							newPage.setStatus("current");
-							newPage.setTitle(page.getTitle());
-							ConfluenceBodyType bodyType = new ConfluenceBodyType();
-							bodyType.setRepresentation("storage");
-							bodyType.setValue(sb.toString());
-							ConfluenceBody body = new ConfluenceBody();
-							body.setStorage(bodyType);
-							newPage.setBody(body);
-							ConfluenceVersion version = page.getVersion();
-							version.setNumber(version.getNumber() + 1);
-							newPage.setVersion(version);
+				try {
+					List<ConfluencePages> pagesList = pages.getObjects(config);
+					if (pagesList.size() == 1 && pagesList.get(0).getResults().size() == 1) {
+						// Patch URLs
+						ConfluencePage page = pagesList.get(0).getResults().get(0);
+						String content = page.getBody().getStorage().getValue();
+						Log.debug(LOGGER, "Post migrate page in space " + spaceKey + "(" + spaceId + ") title " + title);
+						Log.debug(LOGGER, "Content: " + content);
+						// Parse content, find URL patterns
+						Matcher matcher = URL_PATTERN.matcher(content);
+						StringBuilder sb = new StringBuilder();
+						boolean changed = false;
+						while (matcher.find()) {
+							String tag = matcher.group(0);
+							String urlString = matcher.group(GROUP_HREF);
+							String urlText = matcher.group(GROUP_TEXT);
+							String handlerName = "N/A";
 							try {
-								RESTUtil.invokeCloudRest(UpdatePage.class, config, 
-										"/wiki/api/v2/pages/" + page.getId(), HttpMethod.PUT,
-										authHeader, query, newPage, "startAt", HttpStatus.SC_OK);
-								Log.info(LOGGER, "Page updated: " + page.getId());
-								CSV.printRecord(outputPrinter, spaceKey, title, 
-										"Page Updated", "N/A", "N/A", "N/A");
+								String urlDecoded = StringEscapeUtils.unescapeHtml4(urlString);
+								URI uri = new URI(urlDecoded);
+								boolean accepted = false;
+								for (Handler handler : handlers) {
+									if (handler.accept(uri)) {
+										accepted = true;
+										handlerName = handler.getClass().getCanonicalName();
+										Log.debug(LOGGER, "Handler " + handlerName + " accepts " + urlString);
+										HandlerResult hr = handler.handle(uri, urlText);
+										switch (hr.getResultType()) {
+										case WARN:
+											changed = true;
+											CSV.printRecord(outputPrinter, spaceKey, title, 
+													"Warning: " + hr.getErrorMessage(),
+													handlerName, urlString, urlString);
+											break;
+										case ERROR:
+											changed = false;
+											CSV.printRecord(outputPrinter, spaceKey, title, 
+													"Error: " + hr.getErrorMessage(),
+													handlerName, urlString, urlString);
+											break;
+										case TAG:
+											changed = true;
+											Log.debug(LOGGER, handler.getClass() + ": " + 
+													"From: [" + tag + "] " + 
+													"To: [" + hr.getTag() + "]");
+											// Replace the whole match
+											matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
+											CSV.printRecord(outputPrinter, spaceKey, title, 
+													"Success", handlerName, tag, hr.getTag());
+											break;
+										case URI:
+											changed = true;
+											String resultUrl = StringEscapeUtils.escapeHtml4(hr.getUri().toString());
+											Log.debug(LOGGER,
+													handler.getClass() + ": " + "From URL: [" + urlString + "] "
+															+ "Decoded URL: [" + urlDecoded + "] " + "Path: ["
+															+ uri.getPath() + "] " + "Query: [" + uri.getQuery() + "] "
+															+ "To URL: [" + hr.getUri().toString() + "] "
+															+ "To Escaped URL: [" + resultUrl + "]");
+											// Replace URL only
+											matcher.appendReplacement(sb, "$" + GROUP_BEFORE_HREF
+													+ Matcher.quoteReplacement(resultUrl) + "$" + GROUP_AFTER_HREF);
+											CSV.printRecord(outputPrinter, spaceKey, title, 
+													"Success", handlerName, urlString, resultUrl);
+											break;
+										}
+										break; // Stop after a handler accepts the URL
+									} // If accepted
+								} // For all handlers
+								if (!accepted) {
+									Log.debug(LOGGER, "No handlers accept " + urlString);
+									CSV.printRecord(outputPrinter, spaceKey, title, "Ignored", "", urlString, urlString);
+								}
 							} catch (Exception ex) {
-								CSV.printRecord(outputPrinter, spaceKey, title, 
-										"Page update failed " + ex.getMessage(), "N/A", "N/A", "N/A");
+								Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
+								CSV.printRecord(outputPrinter, spaceKey, title, "Invalid URI: " + ex.getMessage(),
+										handlerName, urlString, "");
+							}
+						} // While matcher.find
+						matcher.appendTail(sb);
+						if (changed) {
+							// Perform update
+							Log.debug(LOGGER, spaceKey + " " + title + " from: " + content);
+							Log.debug(LOGGER, spaceKey + " " + title + " to: " + sb.toString());
+							if (config.getPostMigrate().isPerformUpdate()) {
+								MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
+								Map<String, Object> query = new HashMap<>();
+								query.put("id", page.getId());
+								ConfluencePage newPage = new ConfluencePage();
+								newPage.setId(page.getId());
+								newPage.setStatus("current");
+								newPage.setTitle(page.getTitle());
+								ConfluenceBodyType bodyType = new ConfluenceBodyType();
+								bodyType.setRepresentation("storage");
+								bodyType.setValue(sb.toString());
+								ConfluenceBody body = new ConfluenceBody();
+								body.setStorage(bodyType);
+								newPage.setBody(body);
+								ConfluenceVersion version = page.getVersion();
+								version.setNumber(version.getNumber() + 1);
+								newPage.setVersion(version);
+								try {
+									RESTUtil.invokeCloudRest(UpdatePage.class, config, 
+											"/wiki/api/v2/pages/" + page.getId(), HttpMethod.PUT,
+											authHeader, query, newPage, "startAt", HttpStatus.SC_OK);
+									Log.info(LOGGER, "Page updated: " + page.getId());
+									CSV.printRecord(outputPrinter, spaceKey, title, 
+											"Page Updated", "N/A", "N/A", "N/A");
+								} catch (Exception ex) {
+									CSV.printRecord(outputPrinter, spaceKey, title, 
+											"Page update failed " + ex.getMessage(), "N/A", "N/A", "N/A");
+								}
 							}
 						}
+					} else {
+						Log.error(LOGGER,
+								"Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);
+						CSV.printRecord(outputPrinter, spaceKey, title, 
+								"Unable to locate page in space", "N/A", "N/A", "N/A");
 					}
-				} else {
-					Log.error(LOGGER,
-							"Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);
+				} catch (Exception ex) {
+					Log.error(LOGGER, 
+							"Unable to process page in space " + spaceKey + "(" + spaceId + ") title " + title);
 					CSV.printRecord(outputPrinter, spaceKey, title, 
-							"Unable to locate page in space", "N/A", "N/A", "N/A");
+							"Unable to process page: " + ex.getMessage(), "N/A", "N/A", "N/A");
 				}
-			}
-		}
+			}	// for each post-migration page
+		}	// try for file outputs
 	}
 
 	private static void migrateTemplate(Config config) throws Exception {
