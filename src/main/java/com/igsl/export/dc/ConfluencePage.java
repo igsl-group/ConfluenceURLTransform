@@ -9,18 +9,19 @@ import java.util.List;
 import org.apache.commons.csv.CSVRecord;
 
 import com.igsl.ObjectData;
+import com.igsl.config.SQLConfig;
 
 public class ConfluencePage extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT c.CONTENTID, c.VERSION, c.TITLE, s.SPACEKEY " + 
-			"FROM CONTENT c " + 
-			"JOIN " + 
-			"(SELECT TITLE, VERSION, MAX(HIBERNATEVERSION) AS HIBERNATEVERSION FROM CONTENT GROUP BY TITLE, VERSION) v " + 
-			"ON v.TITLE = c.TITLE AND v.HIBERNATEVERSION = c.HIBERNATEVERSION AND v.VERSION = c.VERSION " + 
-            "LEFT JOIN CONTENT p ON p.CONTENTID = c.PREVVER " + 
-			"JOIN SPACES s ON (s.SPACEID = c.SPACEID OR s.SPACEID = p.SPACEID) " + 
-			"WHERE c.CONTENTTYPE = 'PAGE' ";
+	private static final String SQL = SQLConfig.getInstance().getSQL(ConfluencePage.class);
+//			"SELECT c.CONTENTID, c.VERSION, c.TITLE, s.SPACEKEY " + 
+//			"FROM CONTENT c " + 
+//			"JOIN " + 
+//			"(SELECT TITLE, VERSION, MAX(HIBERNATEVERSION) AS HIBERNATEVERSION FROM CONTENT GROUP BY TITLE, VERSION) v " + 
+//			"ON v.TITLE = c.TITLE AND v.HIBERNATEVERSION = c.HIBERNATEVERSION AND v.VERSION = c.VERSION " + 
+//            "LEFT JOIN CONTENT p ON p.CONTENTID = c.PREVVER " + 
+//			"JOIN SPACES s ON (s.SPACEID = c.SPACEID OR s.SPACEID = p.SPACEID) " + 
+//			"WHERE c.CONTENTTYPE = 'PAGE' ";
 	public static final String COL_PAGEID = "PAGEID";
 	public static final String COL_PAGEVERSION = "PAGEVERSION";
 	public static final String COL_PAGENAME = "PAGENAME";

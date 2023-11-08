@@ -8,9 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraProject extends ObjectExport {
 
-	private static final String SQL = "SELECT ID, PKEY, PNAME FROM PROJECT";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraProject.class);
+//	private static final String SQL = "SELECT ID, PKEY, PNAME FROM PROJECT";
 	public static final String COL_ID = "ID";
 	public static final String COL_PROJECTKEY = "PROJECTKEY";
 	public static final String COL_PROJECTNAME = "PROJECTNAME";

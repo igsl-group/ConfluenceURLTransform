@@ -8,6 +8,8 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 /**
  * Note: 
  * This includes both page templates and modified blueprints.
@@ -17,11 +19,11 @@ import org.apache.commons.csv.CSVRecord;
  */
 public class ConfluencePageTemplate extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT TEMPLATEID, TEMPLATENAME, TEMPLATEDESC, CONTENT, " + 
-			"CASE WHEN MODULEKEY IS NOT NULL THEN 1 WHEN REFMODULEKEY IS NOT NULL THEN 1 ELSE 0 END AS BLUEPRINT " + 
-			"FROM PAGETEMPLATES " + 
-			"WHERE PREVVER IS NULL";
+	private static final String SQL = SQLConfig.getInstance().getSQL(ConfluencePageTemplate.class);
+//			"SELECT TEMPLATEID, TEMPLATENAME, TEMPLATEDESC, CONTENT, " + 
+//			"CASE WHEN MODULEKEY IS NOT NULL THEN 1 WHEN REFMODULEKEY IS NOT NULL THEN 1 ELSE 0 END AS BLUEPRINT " + 
+//			"FROM PAGETEMPLATES " + 
+//			"WHERE PREVVER IS NULL";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final String COL_DESCRIPTION = "DESCRIPTION";

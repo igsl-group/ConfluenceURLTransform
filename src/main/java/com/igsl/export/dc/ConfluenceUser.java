@@ -8,9 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class ConfluenceUser extends ObjectExport {
 
-	private static final String SQL = "SELECT ID, USER_NAME, DISPLAY_NAME FROM CWD_USER";
+	private static final String SQL = SQLConfig.getInstance().getSQL(ConfluenceUser.class);
+//	private static final String SQL = "SELECT ID, USER_NAME, DISPLAY_NAME FROM CWD_USER";
 	public static final String COL_ID = "ID";
 	public static final String COL_USERNAME = "USERNAME";
 	public static final String COL_DISPLAYNAME = "DISPLAYNAME";

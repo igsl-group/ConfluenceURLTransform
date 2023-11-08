@@ -8,9 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraDashboard extends ObjectExport {
 
-	private static final String SQL = "SELECT ID, PAGENAME, DESCRIPTION FROM PortalPage";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraDashboard.class);
+//	private static final String SQL = "SELECT ID, PAGENAME, DESCRIPTION FROM PortalPage";
 	public static final String COL_ID = "ID";
 	public static final String COL_PAGENAME = "PAGENAME";
 	public static final String COL_DESCRIPTION = "DESCRIPTION";

@@ -16,8 +16,9 @@
             <directory>${project.build.directory}</directory>
             <outputDirectory/>
             <includes>
-                <include>Config.json</include>
-                <include>log4j2.xml</include>
+                <include>*.json</include>
+                <include>*.properties</include>
+                <include>*.xml</include>
                 <include>${project.artifactId}-${project.version}.jar</include>
             </includes>
         </fileSet>

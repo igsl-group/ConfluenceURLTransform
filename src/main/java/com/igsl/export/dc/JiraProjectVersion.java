@@ -8,11 +8,13 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraProjectVersion extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT v.ID, v.VNAME, v.DESCRIPTION, p.PKEY " + 
-			"FROM PROJECTVERSION v JOIN PROJECT p ON p.ID = v.PROJECT";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraProjectVersion.class);
+//			"SELECT v.ID, v.VNAME, v.DESCRIPTION, p.PKEY " + 
+//			"FROM PROJECTVERSION v JOIN PROJECT p ON p.ID = v.PROJECT";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "VNAME";
 	public static final String COL_DESCRIPTION = "DESCRIPTION";

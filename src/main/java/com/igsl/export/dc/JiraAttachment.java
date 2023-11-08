@@ -9,19 +9,20 @@ import java.util.List;
 import org.apache.commons.csv.CSVRecord;
 
 import com.igsl.ObjectData;
+import com.igsl.config.SQLConfig;
 
 public class JiraAttachment extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT " + 
-			"a.ID, a.ISSUEID, CONCAT(p.PKEY, '-', i.ISSUENUM) AS ISSUEKEY, " + 
-			"a.MIMETYPE, a.FILENAME, " + 
-			"a.AUTHOR, cu.ID, cu.DISPLAY_NAME, cu.EMAIL_ADDRESS " + 
-			"FROM FILEATTACHMENT a " + 
-			"JOIN JIRAISSUE i ON i.ID = a.ISSUEID " + 
-			"JOIN PROJECT p ON p.ID = i.PROJECT " + 
-			"JOIN APP_USER au ON au.USER_KEY = a.AUTHOR " + 
-			"JOIN CWD_USER cu ON cu.ID = au.ID";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraAttachment.class);
+//			"SELECT " + 
+//			"a.ID, a.ISSUEID, CONCAT(p.PKEY, '-', i.ISSUENUM) AS ISSUEKEY, " + 
+//			"a.MIMETYPE, a.FILENAME, " + 
+//			"a.AUTHOR, cu.ID, cu.DISPLAY_NAME, cu.EMAIL_ADDRESS " + 
+//			"FROM FILEATTACHMENT a " + 
+//			"JOIN JIRAISSUE i ON i.ID = a.ISSUEID " + 
+//			"JOIN PROJECT p ON p.ID = i.PROJECT " + 
+//			"JOIN APP_USER au ON au.USER_KEY = a.AUTHOR " + 
+//			"JOIN CWD_USER cu ON cu.ID = au.ID";
 	public static final String COL_ID = "ID";
 	public static final String COL_ISSUEID = "ISSUEID";
 	public static final String COL_ISSUEKEY = "ISSUEKEY";

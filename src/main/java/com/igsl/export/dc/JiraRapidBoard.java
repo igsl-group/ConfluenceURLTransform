@@ -8,11 +8,13 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraRapidBoard extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT rv.ID AS BOARDID, rv.NAME AS BOARDNAME " + 
-			"FROM AO_60DB71_RAPIDVIEW rv";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraRapidBoard.class);
+//			"SELECT rv.ID AS BOARDID, rv.NAME AS BOARDNAME " + 
+//			"FROM AO_60DB71_RAPIDVIEW rv";
 	public static final String COL_BOARDID = "BOARDID";
 	public static final String COL_BORADNAME = "BOARDNAME";
 	public static final List<String> COL_LIST = Arrays.asList(COL_BOARDID, COL_BORADNAME);

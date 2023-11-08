@@ -9,14 +9,15 @@ import java.util.List;
 import org.apache.commons.csv.CSVRecord;
 
 import com.igsl.ObjectData;
+import com.igsl.config.SQLConfig;
 
 public class JiraSLA extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT t.ID, t.NAME, t.SERVICE_DESK_ID, p.PKEY AS PROJECTKEY " + 
-			"FROM AO_54307E_TIMEMETRIC t " + 
-			"JOIN AO_54307E_VIEWPORT v ON v.ID = t.SERVICE_DESK_ID " + 
-			"JOIN PROJECT p ON p.ID = v.PROJECT_ID";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraSLA.class);
+//			"SELECT t.ID, t.NAME, t.SERVICE_DESK_ID, p.PKEY AS PROJECTKEY " + 
+//			"FROM AO_54307E_TIMEMETRIC t " + 
+//			"JOIN AO_54307E_VIEWPORT v ON v.ID = t.SERVICE_DESK_ID " + 
+//			"JOIN PROJECT p ON p.ID = v.PROJECT_ID";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final String COL_SERVICEDESKID = "SERVICE_DESK_ID";

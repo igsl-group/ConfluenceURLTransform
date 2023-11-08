@@ -8,10 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraFilter extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT id, filtername, description, authorname, groupname, projectid, reqcontent FROM searchrequest";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraFilter.class);
+//			"SELECT id, filtername, description, authorname, groupname, projectid, reqcontent FROM searchrequest";
 	public static final String COL_ID = "ID";
 	public static final String COL_FILTERNAME = "FILTERNAME";
 	public static final String COL_DESCRIPTION = "DESCRIPTION";

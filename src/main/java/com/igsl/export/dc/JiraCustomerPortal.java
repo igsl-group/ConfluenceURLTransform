@@ -8,12 +8,14 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraCustomerPortal extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT ao.ID, ao.NAME, ao.DESCRIPTION, p.PKEY, ao.PROJECT_ID " + 
-			"FROM AO_54307E_VIEWPORT ao " + 
-			"JOIN PROJECT p ON p.ID = ao.PROJECT_ID ";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraCustomerPortal.class);
+//			"SELECT ao.ID, ao.NAME, ao.DESCRIPTION, p.PKEY, ao.PROJECT_ID " + 
+//			"FROM AO_54307E_VIEWPORT ao " + 
+//			"JOIN PROJECT p ON p.ID = ao.PROJECT_ID ";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final String COL_DESCRIPTION = "DESCRIPTION";

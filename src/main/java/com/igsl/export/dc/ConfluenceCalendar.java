@@ -18,11 +18,13 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.http.HttpStatus;
 
 import com.igsl.ObjectData;
+import com.igsl.config.SQLConfig;
 import com.igsl.rest.RESTUtil;
 
 public class ConfluenceCalendar extends ObjectExport {
 
-	private static final String SQL = "SELECT ID, NAME, DESCRIPTION, SPACE_KEY FROM AO_950DC3_TC_SUBCALS";
+	private static final String SQL = SQLConfig.getInstance().getSQL(ConfluenceCalendar.class);
+	//private static final String SQL = "SELECT ID, NAME, DESCRIPTION, SPACE_KEY FROM AO_950DC3_TC_SUBCALS";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final String COL_DESCRIPTION = "DESCRIPTION";

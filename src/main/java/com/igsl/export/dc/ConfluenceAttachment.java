@@ -10,20 +10,20 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.igsl.Log;
 import com.igsl.ObjectData;
+import com.igsl.config.SQLConfig;
 
 public class ConfluenceAttachment extends ObjectExport {
 
 	private static final Logger LOGGER = LogManager.getLogger(ConfluenceAttachment.class);
-	private static final String SQL = 
-			"SELECT c.CONTENTID, c.VERSION, c.TITLE, " + 
-			"p.VERSION AS PAGE_VERSION, p.TITLE AS PAGE_TITLE, " + 
-			"s.SPACEKEY " + 
-			"FROM CONTENT c " + 
-			"JOIN CONTENT p ON p.CONTENTID = c.PAGEID AND p.CONTENTTYPE = 'PAGE' AND p.CONTENT_STATUS = 'current' " + 
-			"JOIN SPACES s ON s.SPACEID = c.SPACEID " + 
-			"WHERE c.CONTENTTYPE = 'ATTACHMENT' AND c.CONTENT_STATUS = 'current' AND c.PREVVER IS NULL";
+	private static final String SQL = SQLConfig.getInstance().getSQL(ConfluenceAttachment.class);
+//			"SELECT c.CONTENTID, c.VERSION, c.TITLE, " + 
+//			"p.VERSION AS PAGE_VERSION, p.TITLE AS PAGE_TITLE, " + 
+//			"s.SPACEKEY " + 
+//			"FROM CONTENT c " + 
+//			"JOIN CONTENT p ON p.CONTENTID = c.PAGEID AND p.CONTENTTYPE = 'PAGE' AND p.CONTENT_STATUS = 'current' " + 
+//			"JOIN SPACES s ON s.SPACEID = c.SPACEID " + 
+//			"WHERE c.CONTENTTYPE = 'ATTACHMENT' AND c.CONTENT_STATUS = 'current' AND c.PREVVER IS NULL";
 	public static final String COL_ATTACHMENT_ID = "ATTACHMENTID";
 	public static final String COL_ATTACHMENT_VERSION = "ATTACHMENTVERSION";
 	public static final String COL_ATTACHMENT_NAME = "ATTACHMENTNAME";

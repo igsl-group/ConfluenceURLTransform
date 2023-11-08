@@ -8,9 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
-public class JiraIssueType extends ObjectExport {
+import com.igsl.config.SQLConfig;
 
-	private static final String SQL = "SELECT ID, PNAME, DESCRIPTION FROM ISSUETYPE";
+public class JiraIssueType extends ObjectExport {
+	
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraIssueType.class);
+//	private static final String SQL = "SELECT ID, PNAME, DESCRIPTION FROM ISSUETYPE";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final String COL_DESCRIPTION = "DESCRIPTION";

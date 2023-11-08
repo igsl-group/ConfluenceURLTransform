@@ -8,14 +8,16 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraApplicationLink extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT SUBSTR(a.property_key,16,36) as APPKEY, " + 
-			"b.propertyvalue as NAME " +   
-			"FROM propertyentry a " + 
-			"join propertystring b on a.id = b.id " +  
-			"where a.property_key like 'applinks.admin%name'";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraApplicationLink.class);
+//			"SELECT SUBSTR(a.property_key,16,36) as APPKEY, " + 
+//			"b.propertyvalue as NAME " +   
+//			"FROM propertyentry a " + 
+//			"join propertystring b on a.id = b.id " +  
+//			"where a.property_key like 'applinks.admin%name'";
 	public static final String COL_APPKEY = "APPKEY";
 	public static final String COL_NAME = "NAME";
 	public static final List<String> COL_LIST = Arrays.asList(COL_APPKEY, COL_NAME);

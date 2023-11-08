@@ -8,9 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class ConfluenceSpace extends ObjectExport {
 
-	private static final String SQL = "SELECT SPACEID, SPACENAME, SPACEKEY FROM SPACES";
+	private static final String SQL = SQLConfig.getInstance().getSQL(ConfluenceSpace.class);
+//	private static final String SQL = "SELECT SPACEID, SPACENAME, SPACEKEY FROM SPACES";
 	public static final String COL_SPACEID = "SPACEID";
 	public static final String COL_SPACENAME = "SPACENAME";
 	public static final String COL_SPACEKEY = "SPACEKEY";

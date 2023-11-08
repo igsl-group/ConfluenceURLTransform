@@ -8,12 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
-import com.igsl.ObjectData;
+import com.igsl.config.SQLConfig;
 
 public class JiraUser extends ObjectExport {
 
-	private static final String SQL = 
-			"SELECT ID, USER_NAME, ACTIVE, DISPLAY_NAME, EMAIL_ADDRESS FROM CWD_USER";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraUser.class);
+//			"SELECT ID, USER_NAME, ACTIVE, DISPLAY_NAME, EMAIL_ADDRESS FROM CWD_USER";
 	public static final String COL_ID = "ID";
 	public static final String COL_USER_NAME = "USER_NAME";
 	public static final String COL_DISPLAY_NAME = "DISPLAY_NAME";

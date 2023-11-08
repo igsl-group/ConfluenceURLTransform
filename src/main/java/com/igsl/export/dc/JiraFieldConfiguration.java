@@ -8,9 +8,12 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVRecord;
 
+import com.igsl.config.SQLConfig;
+
 public class JiraFieldConfiguration extends ObjectExport {
 
-	private static final String SQL = "SELECT ID, NAME from FIELDLAYOUT";
+	private static final String SQL = SQLConfig.getInstance().getSQL(JiraFieldConfiguration.class);
+//	private static final String SQL = "SELECT ID, NAME from FIELDLAYOUT";
 	public static final String COL_ID = "ID";
 	public static final String COL_NAME = "NAME";
 	public static final List<String> COL_LIST = Arrays.asList(COL_ID, COL_NAME);
