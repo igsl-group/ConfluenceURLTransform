@@ -699,7 +699,7 @@ public class ConfluenceURLTransform {
 				if (config.getDcExport().getConfluenceUser() == null) {
 					config.getDcExport().setConfluenceUser(Console.readLine("Confluence User: "));
 				} else {
-					Console.println("Confluence User: %1s", config.getConnections().getConfluenceUser());
+					Console.println("Confluence User: %1s", config.getDcExport().getConfluenceUser());
 				}
 				config.getDcExport().setConfluencePassword(new String(Console.readPassword("Confluence Password: ")));
 			}
