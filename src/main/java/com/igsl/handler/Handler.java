@@ -18,11 +18,12 @@ public abstract class Handler {
 	private static final Logger LOGGER = LogManager.getLogger(Handler.class);
 
 	protected static final String QUERY_PAGE_ID = 
-			"SELECT c.TITLE, s.SPACEKEY " + 
+			"SELECT c.TITLE, s.SPACEKEY, c.VERSION " + 
 			"FROM CONTENT c " + 
 			"LEFT JOIN CONTENT p ON p.CONTENTID = c.PREVVER " + 
 			"JOIN SPACES s ON s.SPACEID = c.SPACEID OR s.SPACEID = p.SPACEID " + 
 			"WHERE c.CONTENTID = ?";
+	protected static final String LATEST_PAGE = "1";
 	protected static final String QUERY_ATTACHMENT_ID = 
 			"SELECT a.TITLE AS AttachmentTitle, p.TITLE AS PageTitle, s.SPACEKEY " + 
 			"FROM CONTENT a " + 

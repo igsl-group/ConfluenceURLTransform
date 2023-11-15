@@ -8,27 +8,27 @@
     },
     "connections": {
         "confluenceConnectionString": "jdbc:mysql://localhost:3307/confluence",
-        "confluenceUser": null,
+        "confluenceUser": "root",
         "confluencePassword": null, 
         "jiraConnectionString": "jdbc:mysql://localhost:3307/jira",
-        "jiraUser": null,
+        "jiraUser": "root",
         "jiraPassword": null
     },
     "dcExport": {
         "confluenceScheme": "http",
         "confluenceHost": "localhost:8090",
         "confluenceUser": "admin",
-        "confluencePassword": "admin",
+        "confluencePassword": null,
         "jiraScheme": "http",
         "jiraHost": "localhost:8080",
         "jiraUser": "admin",
-        "jiraPassword": "admin"
+        "jiraPassword": null
     },
     "pageTemplate": {
         "performUpdate": false
     },
     "urlTransform": {
-        "performUpdate": false,
+        "performUpdate": true,
         "defaultScheme": "https",
         "fromSchemeRegex": "https?",
         "toScheme": "https",
@@ -42,7 +42,7 @@
         "jiraToBasePath": "/jira"
     },
     "postMigrate": {
-         "performUpdate": false
+         "performUpdate": true
     },
     "handler": {
         "dc": [
@@ -98,7 +98,8 @@
         "postMigrate": [
             "com.igsl.handler.postmigrate.confluence.Calendar",
             "com.igsl.handler.postmigrate.confluence.Display",
-            "com.igsl.handler.postmigrate.confluence.Page",
+            "com.igsl.handler.postmigrate.confluence.CreatePage",
+            "com.igsl.handler.postmigrate.confluence.ViewPage",
             "com.igsl.handler.postmigrate.confluence.PageTemplate",
             "com.igsl.handler.postmigrate.confluence.UserInParam",
             "com.igsl.handler.postmigrate.confluence.UserInPath",

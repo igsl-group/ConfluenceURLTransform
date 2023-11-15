@@ -98,7 +98,8 @@
         "postMigrate": [
             "com.igsl.handler.postmigrate.confluence.Calendar",
             "com.igsl.handler.postmigrate.confluence.Display",
-            "com.igsl.handler.postmigrate.confluence.Page",
+            "com.igsl.handler.postmigrate.confluence.CreatePage",
+            "com.igsl.handler.postmigrate.confluence.ViewPage",
             "com.igsl.handler.postmigrate.confluence.PageTemplate",
             "com.igsl.handler.postmigrate.confluence.UserInParam",
             "com.igsl.handler.postmigrate.confluence.UserInPath",

@@ -409,7 +409,7 @@ public class ConfluenceURLTransform {
 						// Patch URLs
 						ConfluencePage page = pagesList.get(0).getResults().get(0);
 						String content = page.getBody().getStorage().getValue();
-						Log.debug(LOGGER, "Post migrate page in space " + spaceKey + "(" + spaceId + ") title " + title);
+						Log.debug(LOGGER, "Post migrate page in space " + spaceKey + "(" + spaceId + ") title " + title + " id " + page.getId());
 						Log.debug(LOGGER, "Content: " + content);
 						// Parse content, find URL patterns
 						Matcher matcher = URL_PATTERN.matcher(content);
@@ -487,6 +487,7 @@ public class ConfluenceURLTransform {
 							// Perform update
 							Log.debug(LOGGER, spaceKey + " " + title + " from: " + content);
 							Log.debug(LOGGER, spaceKey + " " + title + " to: " + sb.toString());
+							Log.debug(LOGGER, "Modifying pageId: " + page.getId());
 							if (config.getPostMigrate().isPerformUpdate()) {
 								MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
 								Map<String, Object> query = new HashMap<>();
@@ -690,7 +691,7 @@ public class ConfluenceURLTransform {
 				if (config.getDcExport().getJiraUser() == null) {
 					config.getDcExport().setJiraUser(Console.readLine("Jira User: "));
 				} else {
-					Console.println("Jira User: %1s", config.getConnections().getJiraUser());
+					Console.println("Jira User: %1s", config.getDcExport().getJiraUser());
 				}
 				config.getDcExport().setJiraPassword(new String(Console.readPassword("Jira Password: ")));
 			}

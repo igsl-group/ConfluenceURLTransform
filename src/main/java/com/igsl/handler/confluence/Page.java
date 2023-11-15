@@ -18,17 +18,21 @@ import com.igsl.handler.HandlerResult;
 public class Page extends Confluence {
 	
 	private static final Logger LOGGER = LogManager.getLogger(Page.class);
-	private static final String PARAM_PAGEID = "pageId";
-	private static final String PARAM_PREVIEW = "preview";
-	private static final String PARAM_TITLE = "title";
-	private static final String PARAM_SPACEKEY = "spaceKey";
 	private static final Pattern PATH_REGEX = Pattern.compile("/pages/[^?#]*");
 	private static final Pattern PAGEID_REGEX = Pattern.compile("pageId=([0-9]+)");
+	private static final String PARAM_PAGE_VERSION = "pageVersion";
 	
 	public Page(Config config) {
 		super(config);
 	}
 
+	@Override
+	public boolean needPostMigrate() {
+		// Link to page with version format has changed in Cloud, only pageId is supported.
+		// So we will transform the URL to the new format, and use post migrate to handle pageId.
+		return true;
+	}
+	
 	@Override
 	protected boolean _accept(URI uri) {
 		if (!super._accept(uri)) {
@@ -43,31 +47,31 @@ public class Page extends Confluence {
 
 	@Override
 	public HandlerResult handle(URI uri, String text) throws Exception {
-		String title = null;
-		String spaceKey = null;
+		// Get pageVersion from pageId
+		String version = null;
 		String query = uri.getQuery();
 		String pageIdString = null;
 		Matcher pageIdMatcher = PAGEID_REGEX.matcher(query);
 		if (pageIdMatcher.find()) {
 			pageIdString = pageIdMatcher.group(1);
 		}
-		URIBuilder parser = new URIBuilder(uri);
-		List<NameValuePair> params = parser.getQueryParams();
 		if (pageIdString != null) {
 			int pageId = Integer.parseInt(pageIdString);
 			try (PreparedStatement ps = config.getConnections().getConfluenceConnection().prepareStatement(QUERY_PAGE_ID)) {
 				ps.setInt(1, pageId);
 				try (ResultSet rs = ps.executeQuery()) {
 					if (rs.next()) {
-						title = rs.getString(1);
-						spaceKey = rs.getString(2);
+						version = rs.getString(3);
 					}
 				}
 			}
 		}
+		URIBuilder parser = new URIBuilder(uri);
+		List<NameValuePair> params = parser.getQueryParams();
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme(config.getUrlTransform().getToScheme());
 		builder.setHost(config.getUrlTransform().getConfluenceToHost());
+		// Convert to spaceKey + title format
 		String newPath = uri.getPath();
 		// Remove original base path
 		if (newPath.startsWith(config.getUrlTransform().getConfluenceFromBasePath())) {
@@ -77,16 +81,11 @@ public class Page extends Confluence {
 				config.getUrlTransform().getConfluenceToBasePath(),
 				newPath));
 		builder.setFragment(uri.getFragment());
-		// Add back query parameters, except pageId and preview
-		if (title != null && spaceKey != null) {
-			builder.addParameter(PARAM_SPACEKEY, spaceKey);
-			builder.addParameter(PARAM_TITLE, title);
-		}
 		for (NameValuePair q : params) {
-			// TODO Keep PARAM_PREVIEW if post migration patching is used
-			if (!PARAM_PAGEID.equals(q.getName()) && !PARAM_PREVIEW.equals(q.getName())) {
-				builder.addParameter(q.getName(), q.getValue());
-			}
+			builder.addParameter(q.getName(), q.getValue());
+		}
+		if (version != null) {
+			builder.addParameter(PARAM_PAGE_VERSION, version);
 		}
 		return new HandlerResult(builder.build());
 	}

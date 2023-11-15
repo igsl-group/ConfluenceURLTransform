@@ -8,20 +8,20 @@
     },
     "connections": {
         "confluenceConnectionString": "jdbc:mysql://192.168.59.37:3306/confluence",
-        "confluenceUser": "x_igsl_kw",
+        "confluenceUser": "x_igsl_transform",
         "confluencePassword": null, 
         "jiraConnectionString": "jdbc:mysql://192.168.59.35:3306/jira",
-        "jiraUser": "x_igsl_kw",
+        "jiraUser": "x_igsl_transform",
         "jiraPassword": null
     },
     "dcExport": {
         "confluenceScheme": "https",
         "confluenceHost": "wiki-plike.pccwglobal.com",
-        "confluenceUser": "x_igsl_kw",
+        "confluenceUser": "x-igsl-kw",
         "confluencePassword": null,
         "jiraScheme": "https",
         "jiraHost": "jira-plike.pccwglobal.com",
-        "jiraUser": "x_igsl_kw",
+        "jiraUser": "x-igsl-kw",
         "jiraPassword": null
     },
     "pageTemplate": {
@@ -98,7 +98,8 @@
         "postMigrate": [
             "com.igsl.handler.postmigrate.confluence.Calendar",
             "com.igsl.handler.postmigrate.confluence.Display",
-            "com.igsl.handler.postmigrate.confluence.Page",
+            "com.igsl.handler.postmigrate.confluence.CreatePage",
+            "com.igsl.handler.postmigrate.confluence.ViewPage",
             "com.igsl.handler.postmigrate.confluence.PageTemplate",
             "com.igsl.handler.postmigrate.confluence.UserInParam",
             "com.igsl.handler.postmigrate.confluence.UserInPath",

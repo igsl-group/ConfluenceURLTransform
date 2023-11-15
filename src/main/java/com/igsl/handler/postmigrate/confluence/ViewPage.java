@@ -13,10 +13,10 @@ import com.igsl.handler.postmigrate.BasePostMigrate;
 import com.igsl.handler.postmigrate.MappingSetting;
 import com.igsl.handler.postmigrate.ParamSetting;
 
-public class Page extends BasePostMigrate {
+public class ViewPage extends BasePostMigrate {
 
-	private static final Logger LOGGER = LogManager.getLogger(Page.class);
-	private static final String PAGE_ID = "fromPageId";
+	private static final Logger LOGGER = LogManager.getLogger(ViewPage.class);
+	private static final String PAGE_ID = "pageId";
 	
 	@Override
 	public boolean needPostMigrate() {
@@ -29,12 +29,12 @@ public class Page extends BasePostMigrate {
 			new URLPattern()
 				.setPathRegex(
 						Pattern.quote(config.getUrlTransform().getConfluenceToBasePath()) + 
-						"/pages/createpage.action")
+						"/pages/viewpage.action")
 				.setQuery(PAGE_ID)
 		};
 	}
 	
-	public Page(Config config) {
+	public ViewPage(Config config) {
 		super(	config, 
 				config.getUrlTransform().getConfluenceToHost(), 
 				Arrays.asList(
@@ -45,7 +45,7 @@ public class Page extends BasePostMigrate {
 				),
 				null,
 				Arrays.asList(new ParamSetting(
-					Page.class, PAGE_ID, null, CloudConfluencePages.class)
+					ViewPage.class, PAGE_ID, null, CloudConfluencePages.class)
 				));
 	}
 }
