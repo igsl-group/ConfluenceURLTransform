@@ -16,11 +16,11 @@
     },
     "dcExport": {
         "confluenceScheme": "https",
-        "confluenceHost": "wiki-plike.pccwglobal.com",
+        "confluenceHost": "wiki.pccwglobal.com",
         "confluenceUser": "x-igsl-kw",
         "confluencePassword": null,
         "jiraScheme": "https",
-        "jiraHost": "jira-plike.pccwglobal.com",
+        "jiraHost": "jira.pccwglobal.com",
         "jiraUser": "x-igsl-kw",
         "jiraPassword": null
     },

@@ -25,6 +25,13 @@ import java.util.regex.Pattern;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
@@ -56,12 +63,11 @@ import com.igsl.rest.UpdatePage;
 public class ConfluenceURLTransform {
 	private static final Logger LOGGER = LogManager.getLogger(ConfluenceURLTransform.class);
 
-	private static final String COMMAND_TRANSFORM_URL = "url";
-	private static final String COMMAND_DC_EXPORT = "dcexport";
-	private static final String COMMAND_CLOUD_EXPORT = "cloudexport";
-	private static final String COMMAND_POST_MIGRATE = "postmigrate";
-	private static final String COMMAND_MIGRATE_PAGE_TEMPLATE = "pagetemplate";
-	private static final String COMMAND_TEST = "test";
+	private static final String MODE_TRANSFORM_URL = "url";
+	private static final String MODE_DC_EXPORT = "dcexport";
+	private static final String MODE_CLOUD_EXPORT = "cloudexport";
+	private static final String MODE_POST_MIGRATE = "postmigrate";
+	private static final String MODE_MIGRATE_PAGE_TEMPLATE = "pagetemplate";
 
 	private static final String QUERY = "SELECT bc.BODYCONTENTID, bc.BODY, s.SPACEKEY, c.TITLE "
 			+ "FROM BODYCONTENT bc " + "JOIN CONTENT c ON c.CONTENTID = bc.CONTENTID AND c.PREVVER IS NULL "
@@ -296,8 +302,11 @@ public class ConfluenceURLTransform {
 		}
 	}
 
-	private static void exportCloudObjects(Config config) throws Exception {
-		String dcDir = Console.readLine("DC Export Directory: ");
+	private static void exportCloudObjects(CommandLine cmd, Config config) throws Exception {
+		String dcDir = cmd.getOptionValue(dcDirectoryOption);
+		if (dcDir == null || dcDir.isBlank()) {		
+			dcDir = Console.readLine("DC Export Directory: ");
+		}
 		Path dcPath = Paths.get(dcDir);
 		if (!Files.exists(dcPath) || !Files.isDirectory(dcPath)) {
 			throw new Exception("\"" + dcDir + "\" is not a valid directory");
@@ -349,20 +358,29 @@ public class ConfluenceURLTransform {
 		}
 	}
 
-	private static void postMigrate(Config config) throws Exception {
-		String dcDir = Console.readLine("DC Export Directory: ");
+	private static void postMigrate(CommandLine cmd, Config config) throws Exception {
+		String dcDir = cmd.getOptionValue(dcDirectoryOption);
+		if (dcDir == null || dcDir.isBlank()) {
+			dcDir = Console.readLine("DC Export Directory: ");
+		}
 		Path dcPath = Paths.get(dcDir);
 		if (!Files.exists(dcPath) || !Files.isDirectory(dcPath)) {
 			throw new Exception("\"" + dcDir + "\" is not a valid directory");
 		}
 		config.setDcExportDirectory(dcPath);
-		String cloudDir = Console.readLine("Cloud Export Directory: ");
+		String cloudDir = cmd.getOptionValue(cloudDirectoryOption);
+		if (cloudDir == null || cloudDir.isBlank()) {
+			cloudDir = Console.readLine("Cloud Export Directory: ");
+		}
 		Path cloudPath = Paths.get(cloudDir);
 		if (!Files.exists(cloudPath) || !Files.isDirectory(cloudPath)) {
 			throw new Exception("\"" + cloudDir + "\" is not a valid directory");
 		}
 		config.setCloudExportDirectory(cloudPath);
-		String urlDir = Console.readLine("URL Export Directory: ");
+		String urlDir = cmd.getOptionValue(urlDirectoryOption);
+		if (urlDir == null || urlDir.isBlank()) {
+			urlDir = Console.readLine("URL Export Directory: ");
+		}
 		Path urlPath = Paths.get(urlDir);
 		if (!Files.exists(urlPath) || !Files.isDirectory(urlPath)) {
 			throw new Exception("\"" + urlDir + "\" is not a valid directory");
@@ -534,9 +552,12 @@ public class ConfluenceURLTransform {
 		}	// try for file outputs
 	}
 
-	private static void migrateTemplate(Config config) throws Exception {
+	private static void migrateTemplate(CommandLine cmd, Config config) throws Exception {
 		// Input file
-		String dcDir = Console.readLine("DC Export Directory: ");
+		String dcDir = cmd.getOptionValue(dcDirectoryOption);
+		if (dcDir == null || dcDir.isBlank()) {
+			dcDir = Console.readLine("DC Export Directory: ");
+		}
 		Path dcPath = Paths.get(dcDir);
 		if (!Files.exists(dcPath) || !Files.isDirectory(dcPath)) {
 			throw new Exception("\"" + dcDir + "\" is not a valid directory");
@@ -589,61 +610,163 @@ public class ConfluenceURLTransform {
 		}
 	}
 	
-	private static void test(Config config) throws Exception {
-	}
+	private static Options dcExportOptions;
+	private static Options urlTransformOptions;
+	private static Options cloudExportOptions;
+	private static Options pageTemplateOptions;
+	private static Options postMigrateOptions;
+	
+	private static Option modeOption_dcExport;
+	private static Option modeOption_urlTransform;
+	private static Option modeOption_pageTemplate;
+	private static Option modeOption_cloudExport;
+	private static Option modeOption_postMigrate;
 
+	private static Option dcDirectoryOption;
+	private static Option urlDirectoryOption;
+	private static Option cloudDirectoryOption;
+	
+	static {
+		// Setup cli options
+		modeOption_dcExport = Option.builder()
+				.argName("Mode")
+				.option("d")
+				.longOpt("dc")
+				.required()
+				.desc("Export Confluence/Jira Data Center/Server objects")
+				.build();
+		modeOption_urlTransform = Option.builder()
+				.argName("Mode")
+				.option("u")
+				.longOpt("url")
+				.required()
+				.desc("Transform URLs in Confluence Data Center/Server")
+				.build();
+		modeOption_pageTemplate = Option.builder()
+				.argName("Mode")
+				.option("t")
+				.longOpt("template")
+				.required()
+				.desc("Migrate page templates and blueprints from Confluence Data Center/Server to Cloud")
+				.build();
+		modeOption_cloudExport = Option.builder()
+				.argName("Mode")
+				.option("c")
+				.longOpt("cloud")
+				.required()
+				.desc("Export Confluence/Jira Cloud objects")
+				.build();
+		modeOption_postMigrate = Option.builder()
+				.argName("Mode")
+				.option("p")
+				.longOpt("postmigrate")
+				.required()
+				.desc("Transform URLs in Confluence Cloud")
+				.build();
+		
+		dcDirectoryOption = Option.builder()
+				.argName("Data Center/Server Export Directory")
+				.option("dcdir")
+				.required()
+				.hasArg().numberOfArgs(1)
+				.desc("Directory created by mode " + MODE_DC_EXPORT)
+				.build();
+		
+		urlDirectoryOption = Option.builder()
+				.argName("URL Transform Result Directory")
+				.option("urldir")
+				.required()
+				.hasArg().numberOfArgs(1)
+				.desc("Directory created by mode " + MODE_TRANSFORM_URL)
+				.build();
+		
+		cloudDirectoryOption = Option.builder()
+				.argName("Cloud Export Directory")
+				.option("clouddir")
+				.required()
+				.hasArg().numberOfArgs(1)
+				.desc("Directory created by mode " + MODE_CLOUD_EXPORT)
+				.build();
+		
+		dcExportOptions = new Options();
+		dcExportOptions.addOption(modeOption_dcExport);
+		
+		urlTransformOptions = new Options();
+		urlTransformOptions.addOption(modeOption_urlTransform);
+		
+		pageTemplateOptions = new Options();
+		pageTemplateOptions.addOption(modeOption_pageTemplate);
+		
+		cloudExportOptions = new Options();
+		cloudExportOptions.addOption(modeOption_cloudExport);
+		cloudExportOptions.addOption(dcDirectoryOption);
+		
+		postMigrateOptions = new Options();
+		postMigrateOptions.addOption(modeOption_postMigrate);
+		postMigrateOptions.addOption(dcDirectoryOption);
+		postMigrateOptions.addOption(urlDirectoryOption);
+		postMigrateOptions.addOption(cloudDirectoryOption);
+	}
+	
+	private static void printHelp() {
+		HelpFormatter hf = new HelpFormatter();
+		hf.printHelp("DC Export", dcExportOptions);
+		System.out.println();
+		hf.printHelp("URL", urlTransformOptions);
+		System.out.println();
+		hf.printHelp("Template", pageTemplateOptions);
+		System.out.println();
+		hf.printHelp("Cloud Export", cloudExportOptions);
+		System.out.println();
+		hf.printHelp("Post Migrate", postMigrateOptions);
+	}
+	
 	public static void main(String[] args) {
 		if (args.length == 0) {
-			Log.info(LOGGER, "Available Commands: " + 
-					COMMAND_DC_EXPORT + " | " + 
-					COMMAND_TRANSFORM_URL + " | " + 
-					COMMAND_MIGRATE_PAGE_TEMPLATE + " | " + 
-					COMMAND_CLOUD_EXPORT + " | " + 
-					COMMAND_POST_MIGRATE + " | " + 
-					COMMAND_TEST);
-			try {
-				String line = Console.readLine("Space-delimited Command(s): ");
-				if (line != null && !line.isBlank()) {
-					args = line.split("\\s");
-				}
-			} catch (IOException ioex) {
-				Log.error(LOGGER, "Error", ioex);
-				return;
-			}
-		}
-		if (args.length == 0) {
-			Log.error(LOGGER, "No command provided");
+			printHelp();
 			return;
 		}
+		CommandLineParser parser = new DefaultParser();
+		CommandLine cmd = null;
 		boolean needDCAccount = false;
 		boolean needApiToken = false;
 		boolean needConfluenceDB = false;
 		boolean needJiraDB = false;
-		for (String arg : args) {
-			switch (arg.toLowerCase().trim()) {
-			case COMMAND_TEST:
-				break;
-			case COMMAND_MIGRATE_PAGE_TEMPLATE:
-				needApiToken = true;
-				break;
-			case COMMAND_POST_MIGRATE:
-				needApiToken = true;
-				break;
-			case COMMAND_CLOUD_EXPORT:
-				needApiToken = true;
-				break;
-			case COMMAND_DC_EXPORT:
-				needJiraDB = true;
-				needConfluenceDB = true;
-				needDCAccount = true;
-				break;
-			case COMMAND_TRANSFORM_URL:
-				needConfluenceDB = true;
-				break;
-			default:
-				Log.warn(LOGGER, "Unrecognized command \"" + arg + "\"");
-				break;
-			}
+		try {
+			cmd = parser.parse(dcExportOptions, args);
+			needJiraDB = true;
+			needConfluenceDB = true;
+			needDCAccount = true;
+		} catch (ParseException pex) {
+			// Ignore
+		}
+		try {
+			cmd = parser.parse(urlTransformOptions, args);
+			needConfluenceDB = true;
+		} catch (ParseException pex) {
+			// Ignore
+		}
+		try {
+			cmd = parser.parse(pageTemplateOptions, args);
+			needApiToken = true;
+		} catch (ParseException pex) {
+			// Ignore
+		}
+		try {
+			cmd = parser.parse(cloudExportOptions, args);
+			needApiToken = true;
+		} catch (ParseException pex) {
+			// Ignore
+		}
+		try {
+			cmd = parser.parse(postMigrateOptions, args);
+			needApiToken = true;
+		} catch (ParseException pex) {
+			// Ignore
+		}
+		if (cmd == null) {
+			printHelp();
+			return;
 		}
 		Connection confluenceConn = null;
 		Connection jiraConn = null;
@@ -727,27 +850,16 @@ public class ConfluenceURLTransform {
 				config.getConnections().setJiraConnection(jiraConn);
 			}
 			// Execute
-			for (String arg : args) {
-				switch (arg.toLowerCase().trim()) {
-				case COMMAND_TEST:
-					test(config);
-					break;
-				case COMMAND_MIGRATE_PAGE_TEMPLATE:
-					migrateTemplate(config);
-					break;
-				case COMMAND_POST_MIGRATE:
-					postMigrate(config);
-					break;
-				case COMMAND_CLOUD_EXPORT:
-					exportCloudObjects(config);
-					break;
-				case COMMAND_DC_EXPORT:
-					exportDCObjects(config);
-					break;
-				case COMMAND_TRANSFORM_URL:
-					urlTransform(config);
-					break;
-				}
+			if (cmd.hasOption(modeOption_dcExport)) {
+				exportDCObjects(config);
+			} else if (cmd.hasOption(modeOption_urlTransform)) {
+				urlTransform(config);
+			} else if (cmd.hasOption(modeOption_pageTemplate)) {
+				migrateTemplate(cmd, config);
+			} else if (cmd.hasOption(modeOption_cloudExport)) {
+				exportCloudObjects(cmd, config);
+			} else if (cmd.hasOption(modeOption_postMigrate)) {
+				postMigrate(cmd, config);
 			}
 		} catch (Exception ex) {
 			Log.error(LOGGER, "Error", ex);
