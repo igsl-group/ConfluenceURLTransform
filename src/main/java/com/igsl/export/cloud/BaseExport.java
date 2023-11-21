@@ -135,6 +135,16 @@ public abstract class BaseExport<T> {
 		return result;
 	}
 	
+	/**
+	 * If this BaseExport allows mapping 1 Cloud object to multiple DC/Server objects or not.
+	 * Default is false.
+	 * If allowed, then the same Cloud ID will be used for multiple DC/Server IDs. 
+	 * @return
+	 */
+	protected boolean allowOneToManyMapping() {
+		return false;
+	};
+	
 	public Path[] exportObjects(Config config) throws Exception {
 		// TODO How to handle mapping duplicate keys... e.g. user display name
 		ObjectExport p = getObjectExport();
@@ -153,39 +163,48 @@ public abstract class BaseExport<T> {
 				List<ObjectData> rows = getCSVRows(obj);
 				if (rows != null) {
 					for (ObjectData cloudItem : rows) {
+						CSV.printRecord(printerCSV, cloudItem);
 						List<ObjectData> matchesFound = new ArrayList<>();
 						for (ObjectData dcItem : dcData) {
 							if (dcItem.getUniqueKey().equals(cloudItem.getUniqueKey())) {
 								matchesFound.add(dcItem);
-								dcItem.setMapped(true);
-								cloudItem.setMapped(true);
 							}
 						}
-						switch (matchesFound.size()) {
-						case 0:
-							// No match found
-							CSV.printRecord(printerMapping, 
-									NOTE_NO_MATCH, 
-									"", "", 
-									cloudItem.getId(), cloudItem.getUniqueKey());
-							break;
-						case 1:
-							// Single match found
-							ObjectData dcItem = matchesFound.get(0);
-							CSV.printRecord(printerMapping, 
-									NOTE_MATCHED, 
-									dcItem.getId(), dcItem.getUniqueKey(), 
-									cloudItem.getId(), cloudItem.getUniqueKey());
-							break;
-						default:
-							// Multiple matches found
-							CSV.printRecord(printerMapping, 
-									NOTE_MULTIPLE_MATCHES, 
-									"", "", 
-									cloudItem.getId(), cloudItem.getUniqueKey());
-							break;
+						if (allowOneToManyMapping()) {
+							for (ObjectData dcItem : matchesFound) {
+								dcItem.setMapped(true);
+								CSV.printRecord(printerMapping, 
+										NOTE_MATCHED, 
+										dcItem.getId(), dcItem.getUniqueKey(), 
+										cloudItem.getId(), cloudItem.getUniqueKey());
+							}
+						} else {
+							switch (matchesFound.size()) {
+							case 0:
+								// No match found
+								CSV.printRecord(printerMapping, 
+										NOTE_NO_MATCH, 
+										"", "", 
+										cloudItem.getId(), cloudItem.getUniqueKey());
+								break;
+							case 1:
+								// Single match found
+								ObjectData dcItem = matchesFound.get(0);
+								dcItem.setMapped(true);
+								CSV.printRecord(printerMapping, 
+										NOTE_MATCHED, 
+										dcItem.getId(), dcItem.getUniqueKey(), 
+										cloudItem.getId(), cloudItem.getUniqueKey());
+								break;
+							default:
+								// Multiple matches found
+								CSV.printRecord(printerMapping, 
+										NOTE_MULTIPLE_MATCHES, 
+										"", "", 
+										cloudItem.getId(), cloudItem.getUniqueKey());
+								break;
+							}
 						}
-						CSV.printRecord(printerCSV, cloudItem);
 					}
 				}
 			}

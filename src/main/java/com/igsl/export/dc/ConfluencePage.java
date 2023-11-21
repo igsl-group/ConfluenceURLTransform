@@ -64,10 +64,10 @@ public class ConfluencePage extends ObjectExport {
 
 	@Override
 	protected String getObjectKey(CSVRecord r) throws Exception {
-		String pageVersion = r.get(COL_PAGEVERSION);
+		//String pageVersion = r.get(COL_PAGEVERSION);
 		String pageName = r.get(COL_PAGENAME);
 		String spaceKey = r.get(COL_SPACEKEY);
-		return ObjectData.createUniqueKey(spaceKey, pageName, pageVersion);
+		return ObjectData.createUniqueKey(spaceKey, pageName);
 	}
 
 	@Override

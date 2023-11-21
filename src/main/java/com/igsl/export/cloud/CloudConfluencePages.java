@@ -34,7 +34,12 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	
 	private String spaceId;
 	private String title;
-	private boolean getVersions = true;
+	private boolean getVersions = false;
+	
+	@Override
+	protected boolean allowOneToManyMapping() {
+		return true;
+	};
 	
 	public CloudConfluencePages() {
 		super(ConfluencePages.class);
@@ -66,7 +71,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 					page.getSpaceId(),
 					page.getSpaceKey());
 			String uniqueKey = ObjectData.createUniqueKey(
-					page.getSpaceKey(), page.getTitle(), Integer.toString(page.getVersion().getNumber()));
+					page.getSpaceKey(), page.getTitle());
 			result.add(new ObjectData(page.getId(), uniqueKey, COL_LIST, list));
 		}
 		return result;
@@ -84,6 +89,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 			query.put("title", title);
 		}
 		List<ConfluencePages> result = invokeRest(config, "/wiki/api/v2/pages", HttpMethod.GET, header, query, null);
+		/*
 		if (getVersions) {
 			// Get versions for each page
 			ConfluencePages versionedPages = new ConfluencePages();
@@ -117,6 +123,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 			}
 			result.add(versionedPages);
 		}
+		*/
 		// Get spaces
 		CloudConfluenceSpaces spacesExport = new CloudConfluenceSpaces();
 		Map<String, String> spaceList = new HashMap<>();
