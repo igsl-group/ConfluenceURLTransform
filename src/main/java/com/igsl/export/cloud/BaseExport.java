@@ -41,11 +41,21 @@ public abstract class BaseExport<T> {
 	public static final String COL_CLOUDKEY = "CLOUD_KEY";
 	public static final List<String> COL_MAPPING = Arrays.asList(COL_NOTE, COL_DCID, COL_DCKEY, COL_CLOUDID, COL_CLOUDKEY);
 	
+	protected static Map<String, List<?>> dataCache = new HashMap<>();
+	
 	protected final Class<T> templateClass;
 	public BaseExport(Class<T> templateClass) {
 		this.templateClass = templateClass;
 	}
 	
+	/**
+	 * Store this BaseExport's data in cache or not
+	 * @return
+	 */
+	@JsonIgnore
+	protected boolean useDataCache() {
+		return false;
+	}
 	@JsonIgnore
 	public abstract String getLimitParameter();
 	@JsonIgnore
@@ -96,7 +106,7 @@ public abstract class BaseExport<T> {
 	public Map<String, String> readCloudUniqueKeyToIdMapping(Path dir) throws Exception {
 		Map<String, String> result = new HashMap<>();
 		Path p = getMappingPath(dir.toFile().getAbsolutePath());
-		try (	FileReader fr = new FileReader(p.toFile()); 
+		try (	FileReader fr = CSV.getCSVFileReader(p); 
 				CSVParser parser = new CSVParser(fr, CSV.getCSVReadFormat())) {
 			parser.forEach(new Consumer<CSVRecord>() {
 				@Override
@@ -113,7 +123,7 @@ public abstract class BaseExport<T> {
 	public Map<String, String> readDCIdtoCloudIdMapping(Path dir) throws Exception {
 		Map<String, String> result = new HashMap<>();
 		Path p = getMappingPath(dir.toFile().getAbsolutePath());
-		try (	FileReader fr = new FileReader(p.toFile()); 
+		try (	FileReader fr = CSV.getCSVFileReader(p); 
 				CSVParser parser = new CSVParser(fr, CSV.getCSVReadFormat())) {
 			parser.forEach(new Consumer<CSVRecord>() {
 				@Override
@@ -154,9 +164,9 @@ public abstract class BaseExport<T> {
 		Path csvPath = getOutputPath(config);
 		Path mappingPath = getMappingPath(config);
 		List<String> headers = getCSVHeaders();
-		try (	FileWriter fwCSV = new FileWriter(csvPath.toFile());
+		try (	FileWriter fwCSV = CSV.getCSVFileWriter(csvPath);
 				CSVPrinter printerCSV = new CSVPrinter(fwCSV, CSV.getCSVWriteFormat(headers));
-				FileWriter fwMapping = new FileWriter(mappingPath.toFile());
+				FileWriter fwMapping = CSV.getCSVFileWriter(mappingPath);
 				CSVPrinter printerMapping = new CSVPrinter(fwMapping, CSV.getCSVWriteFormat(COL_MAPPING))) {
 			List<T> objects = getObjects(config);
 			for (T obj : objects) {
@@ -232,7 +242,29 @@ public abstract class BaseExport<T> {
 	protected abstract List<ObjectData> getCSVRows(T obj);
 	
 	/**
+	 * Wrapper over _getObjects to implement a cache
+	 */
+	@SuppressWarnings("unchecked")
+	public List<T> getObjects(Config config) throws Exception {
+		String className = this.getClass().getCanonicalName();
+		if (useDataCache()) {
+			if (dataCache.containsKey(className)) {
+				Log.info(LOGGER, "Using cached data for " + className);
+				return (List<T>) dataCache.get(className);
+			} else {
+				Log.info(LOGGER, "Using REST data for " + className);
+				List<T> data = _getObjects(config);
+				dataCache.put(className, data);
+				return data;
+			}
+		} else {
+			Log.info(LOGGER, "Using REST data for " + className);
+			return _getObjects(config);
+		}
+	}
+	
+	/**
 	 * Get data returned from Cloud REST API
 	 */
-	public abstract List<T> getObjects(Config config) throws Exception;	
+	protected abstract List<T> _getObjects(Config config) throws Exception;	
 }

@@ -75,7 +75,7 @@ public class CloudConfluenceAttachments extends BaseExport<ConfluenceAttachments
 	}
 
 	@Override
-	public List<ConfluenceAttachments> getObjects(Config config) throws Exception {
+	protected List<ConfluenceAttachments> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<ConfluenceAttachments> result = invokeRest(config, 

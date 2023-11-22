@@ -53,7 +53,7 @@ public class CloudJiraIssueTypes extends BaseExport<JiraIssueType> {
 	}
 
 	@Override
-	public List<JiraIssueType> getObjects(Config config) throws Exception {
+	protected List<JiraIssueType> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<JiraIssueType> result = invokeRest(config, "/rest/api/3/issuetype", HttpMethod.GET, header, query, null);

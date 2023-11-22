@@ -19,7 +19,6 @@ import com.igsl.export.cloud.model.ConfluencePages;
 import com.igsl.export.cloud.model.ConfluenceSpace;
 import com.igsl.export.cloud.model.ConfluenceSpaces;
 import com.igsl.export.dc.ObjectExport;
-import com.igsl.rest.RESTUtil;
 
 public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 
@@ -35,6 +34,11 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	private String spaceId;
 	private String title;
 	private boolean getVersions = false;
+	
+	@Override
+	protected boolean useDataCache() {
+		return true;
+	}
 	
 	@Override
 	protected boolean allowOneToManyMapping() {
@@ -78,7 +82,7 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	}
 
 	@Override
-	public List<ConfluencePages> getObjects(Config config) throws Exception {
+	protected List<ConfluencePages> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("body-format", "storage");

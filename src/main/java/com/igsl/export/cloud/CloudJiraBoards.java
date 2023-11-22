@@ -54,7 +54,7 @@ public class CloudJiraBoards extends BaseExport<JiraBoards> {
 	}
 
 	@Override
-	public List<JiraBoards> getObjects(Config config) throws Exception {
+	protected List<JiraBoards> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<JiraBoards> result = invokeRest(config, 

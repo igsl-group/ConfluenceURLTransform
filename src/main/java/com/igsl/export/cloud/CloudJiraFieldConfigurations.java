@@ -63,7 +63,7 @@ public class CloudJiraFieldConfigurations extends BaseExport<JiraFieldConfigurat
 	}
 
 	@Override
-	public List<JiraFieldConfigurations> getObjects(Config config) throws Exception {
+	protected List<JiraFieldConfigurations> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<JiraFieldConfigurations> result = invokeRest(config, 

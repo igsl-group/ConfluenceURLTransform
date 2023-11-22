@@ -1,6 +1,10 @@
 package com.igsl;
 
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +39,23 @@ import org.apache.commons.csv.QuoteMode;
  */
 public class CSV {
 	private static final Pattern INVALID_START_CHAR = Pattern.compile("^[=+\\-@\\t\\r\\n]+(.*)");
+	private static final String CHARSET = "UTF-8";
+	
+	public static FileWriter getCSVFileWriter(Path path) throws IOException {
+		return new FileWriter(path.toFile(), Charset.forName(CHARSET));
+	}
+	
+	public static FileWriter getCSVFileWriter(String path) throws IOException {
+		return new FileWriter(path, Charset.forName(CHARSET));
+	}
+
+	public static FileReader getCSVFileReader(Path path) throws IOException {
+		return new FileReader(path.toFile(), Charset.forName(CHARSET));
+	}
+	
+	public static FileReader getCSVFileReader(String path) throws IOException {
+		return new FileReader(path, Charset.forName(CHARSET));
+	}
 	
 	public static CSVFormat getCSVReadFormat() {
 		CSVFormat fmt = CSVFormat.EXCEL;

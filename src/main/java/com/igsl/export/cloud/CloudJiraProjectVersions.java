@@ -61,7 +61,7 @@ public class CloudJiraProjectVersions extends BaseExport<JiraProjectVersions> {
 	}
 
 	@Override
-	public List<JiraProjectVersions> getObjects(Config config) throws Exception {
+	protected List<JiraProjectVersions> _getObjects(Config config) throws Exception {
 		List<JiraProjectVersions> result = new ArrayList<>();
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		CloudJiraProjects projects = new CloudJiraProjects();

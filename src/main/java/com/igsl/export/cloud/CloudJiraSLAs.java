@@ -55,7 +55,7 @@ public class CloudJiraSLAs extends BaseExport<JiraSLAs> {
 	}
 
 	@Override
-	public List<JiraSLAs> getObjects(Config config) throws Exception {
+	protected List<JiraSLAs> _getObjects(Config config) throws Exception {
 		List<JiraSLAs> result = new ArrayList<>();
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		CloudJiraServiceDesks deskExport = new CloudJiraServiceDesks();

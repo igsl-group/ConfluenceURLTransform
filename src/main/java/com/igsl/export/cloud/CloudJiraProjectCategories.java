@@ -53,7 +53,7 @@ public class CloudJiraProjectCategories extends BaseExport<JiraProjectCategory> 
 	}
 
 	@Override
-	public List<JiraProjectCategory> getObjects(Config config) throws Exception {
+	protected List<JiraProjectCategory> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<JiraProjectCategory> result = invokeRest(config, 

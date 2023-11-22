@@ -70,7 +70,7 @@ public class CloudJiraFilters extends BaseExport<JiraFilters> {
 	}
 
 	@Override
-	public List<JiraFilters> getObjects(Config config) throws Exception {
+	protected List<JiraFilters> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("expand", "jql");

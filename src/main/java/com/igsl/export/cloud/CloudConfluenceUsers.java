@@ -57,7 +57,7 @@ public class CloudConfluenceUsers extends BaseExport<ConfluenceUsers> {
 	}
 
 	@Override
-	public List<ConfluenceUsers> getObjects(Config config) throws Exception {
+	protected List<ConfluenceUsers> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("cql", "type=user");

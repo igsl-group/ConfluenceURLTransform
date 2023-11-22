@@ -91,7 +91,7 @@ public abstract class BasePostMigrate extends Handler {
 			Map<String, String> mapping = new HashMap<>();
 			Path p = setting.getBaseExport().getMappingPath(config.getCloudExportDirectory().toFile().getAbsolutePath());
 			Log.debug(LOGGER, "loadMappings() from file: " + p.toFile().getAbsolutePath());
-			try (	FileReader fr = new FileReader(p.toFile()); 
+			try (	FileReader fr = CSV.getCSVFileReader(p); 
 					CSVParser parser = new CSVParser(fr, CSV.getCSVReadFormat())) {
 				parser.forEach(new Consumer<CSVRecord>() {
 					@Override

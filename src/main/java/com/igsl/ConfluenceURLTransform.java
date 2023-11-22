@@ -117,15 +117,15 @@ public class ConfluenceURLTransform {
 			String ignoreList = config.getOutputDirectory().resolve(OUTPUT_URL_IGNORED).toFile().getAbsolutePath();
 			String errorList = config.getOutputDirectory().resolve(OUTPUT_URL_ERRORS).toFile().getAbsolutePath();
 			String pageList = config.getOutputDirectory().resolve(OUTPUT_PAGE_POST_MIGRATE).toFile().getAbsolutePath();
-			try (CSVPrinter urlPrinter = new CSVPrinter(new FileWriter(urlList),
+			try (CSVPrinter urlPrinter = new CSVPrinter(CSV.getCSVFileWriter(urlList),
 					CSV.getCSVWriteFormat(Arrays.asList("POSTMIGRATE", "SPACEKEY", "TITLE", "BODYCONTENTID", "HANDLER",
 							"FROM", "TO")));
-					CSVPrinter ignorePrinter = new CSVPrinter(new FileWriter(ignoreList),
+					CSVPrinter ignorePrinter = new CSVPrinter(CSV.getCSVFileWriter(ignoreList),
 							CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL")));
-					CSVPrinter errorPrinter = new CSVPrinter(new FileWriter(errorList),
+					CSVPrinter errorPrinter = new CSVPrinter(CSV.getCSVFileWriter(errorList),
 							CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE", "BODYCONTENTID", "URL",
 									"ERRORMESSAGE", "HANDLER")));
-					CSVPrinter pagePrinter = new CSVPrinter(new FileWriter(pageList),
+					CSVPrinter pagePrinter = new CSVPrinter(CSV.getCSVFileWriter(pageList),
 							CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE")));) {
 				Log.info(LOGGER, "URLs updated will be written to: " + urlList);
 				Log.info(LOGGER, "URLs ignored will be written to: " + ignoreList);
@@ -406,8 +406,8 @@ public class ConfluenceURLTransform {
 		// Output file
 		Path outputPath = Paths.get(config.getOutputDirectory().toFile().getAbsolutePath(), "Cloud URL Updated.csv");
 		// Process post migrate pages
-		try (FileReader fr = new FileReader(postMigrateCSV.toFile());
-				FileWriter output = new FileWriter(outputPath.toFile());
+		try (FileReader fr = CSV.getCSVFileReader(postMigrateCSV);
+				FileWriter output = CSV.getCSVFileWriter(outputPath);
 				CSVParser postMigrateList = new CSVParser(fr, CSV.getCSVReadFormat());
 				CSVPrinter outputPrinter = new CSVPrinter(output,
 						CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE", "ERROR", "HANDLER", "FROM", "TO")))) {
@@ -568,7 +568,7 @@ public class ConfluenceURLTransform {
 		com.igsl.export.dc.ConfluencePageTemplate pt = new com.igsl.export.dc.ConfluencePageTemplate();
 		List<ObjectData> pageTemplates = pt.readObjects(dcPath);
 		MultivaluedMap<String, Object> authHeader = RESTUtil.getCloudAuthenticationHeader(config);
-		try (	FileWriter fw = new FileWriter(outputPath.toFile());
+		try (	FileWriter fw = CSV.getCSVFileWriter(outputPath);
 				CSVPrinter printer = new CSVPrinter(fw,
 				CSV.getCSVWriteFormat(Arrays.asList("ID", "TEMPLATENAME", "RESULT")));) {
 			for (ObjectData pageTemplate : pageTemplates) {

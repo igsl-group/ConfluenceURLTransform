@@ -6,7 +6,7 @@
         </Console>
         <RollingFile name="RollingFile" 
             fileName="ConfluenceURLTransform.log" 
-            filePattern="ConfluenceURLTransform.%d{yyyy-MM-dd}.log.gz">
+            filePattern="ConfluenceURLTransform.%d{yyyy-MM-dd-HH-mm-ss}.log.gz">
             <PatternLayout>
                 <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
             </PatternLayout>

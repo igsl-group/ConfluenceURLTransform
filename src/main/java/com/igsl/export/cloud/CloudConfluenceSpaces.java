@@ -27,6 +27,11 @@ public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
 	}
 
 	@Override
+	protected boolean useDataCache() {
+		return true;
+	}
+	
+	@Override
 	public String getLimitParameter() {
 		return "limit";
 	}
@@ -52,7 +57,7 @@ public class CloudConfluenceSpaces extends BaseExport<ConfluenceSpaces> {
 	}
 
 	@Override
-	public List<ConfluenceSpaces> getObjects(Config config) throws Exception {
+	protected List<ConfluenceSpaces> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<ConfluenceSpaces> result = invokeRest(config, "/wiki/api/v2/spaces", HttpMethod.GET, header, query, null);

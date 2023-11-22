@@ -34,6 +34,11 @@ public class CloudJiraServiceDesks extends BaseExport<JiraServiceDesks> {
 	}
 	
 	@Override
+	protected boolean useDataCache() {
+		return true;
+	}
+	
+	@Override
 	public String getLimitParameter() {
 		return "limit";
 	}
@@ -64,7 +69,7 @@ public class CloudJiraServiceDesks extends BaseExport<JiraServiceDesks> {
 	}
 
 	@Override
-	public List<JiraServiceDesks> getObjects(Config config) throws Exception {
+	protected List<JiraServiceDesks> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<JiraServiceDesks> result = invokeRest(config, 

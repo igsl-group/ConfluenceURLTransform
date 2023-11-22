@@ -49,7 +49,7 @@ public class CloudJiraUsers extends BaseExport<JiraUser> {
 	}
 
 	@Override
-	public List<JiraUser> getObjects(Config config) throws Exception {
+	protected List<JiraUser> _getObjects(Config config) throws Exception {
 		List<JiraUser> result = new ArrayList<>();
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();

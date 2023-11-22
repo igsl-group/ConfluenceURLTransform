@@ -31,6 +31,11 @@ public class CloudJiraProjects extends BaseExport<JiraProjects> {
 	public CloudJiraProjects() {
 		super(JiraProjects.class);
 	}
+	
+	@Override
+	protected boolean useDataCache() {
+		return true;
+	}
 
 	@Override
 	public String getLimitParameter() {
@@ -59,7 +64,7 @@ public class CloudJiraProjects extends BaseExport<JiraProjects> {
 	}
 
 	@Override
-	public List<JiraProjects> getObjects(Config config) throws Exception {
+	protected List<JiraProjects> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<JiraProjects> result = invokeRest(config, "/rest/api/3/project/search", HttpMethod.GET, header, query, null);

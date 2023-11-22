@@ -77,7 +77,7 @@ public class CloudJiraAttachments extends BaseExport<JiraIssues> {
 	}
 
 	@Override
-	public List<JiraIssues> getObjects(Config config) throws Exception {
+	protected List<JiraIssues> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("fields", "attachment");

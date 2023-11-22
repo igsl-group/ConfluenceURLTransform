@@ -63,7 +63,7 @@ public class CloudJiraDashboards extends BaseExport<JiraDashboards> {
 	}
 
 	@Override
-	public List<JiraDashboards> getObjects(Config config) throws Exception {
+	protected List<JiraDashboards> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		List<JiraDashboards> result = invokeRest(config, 

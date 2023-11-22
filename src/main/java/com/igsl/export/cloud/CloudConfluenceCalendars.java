@@ -70,7 +70,7 @@ public class CloudConfluenceCalendars extends BaseExport<ConfluenceCalendars> {
 	}
 
 	@Override
-	public List<ConfluenceCalendars> getObjects(Config config) throws Exception {
+	protected List<ConfluenceCalendars> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("term", "*");

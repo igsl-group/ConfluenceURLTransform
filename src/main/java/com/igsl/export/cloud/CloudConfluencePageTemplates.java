@@ -60,7 +60,7 @@ public class CloudConfluencePageTemplates extends BaseExport<ConfluencePageTempl
 	}
 
 	@Override
-	public List<ConfluencePageTemplates> getObjects(Config config) throws Exception {
+	protected List<ConfluencePageTemplates> _getObjects(Config config) throws Exception {
 		MultivaluedMap<String, Object> header = getAuthenticationHeader(config);
 		Map<String, Object> query = new HashMap<>();
 		query.put("expand", "body");
