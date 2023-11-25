@@ -410,7 +410,8 @@ public class ConfluenceURLTransform {
 				FileWriter output = CSV.getCSVFileWriter(outputPath);
 				CSVParser postMigrateList = new CSVParser(fr, CSV.getCSVReadFormat());
 				CSVPrinter outputPrinter = new CSVPrinter(output,
-						CSV.getCSVWriteFormat(Arrays.asList("SPACEKEY", "TITLE", "ERROR", "HANDLER", "FROM", "TO")))) {
+						CSV.getCSVWriteFormat(Arrays.asList(
+								"SPACEKEY", "TITLE", "PAGEID", "ERROR", "HANDLER", "FROM", "TO")))) {
 			CloudConfluencePages pages = new CloudConfluencePages();
 			// Read page content
 			for (CSVRecord r : postMigrateList.getRecords()) {
@@ -421,6 +422,7 @@ public class ConfluenceURLTransform {
 				pages.setSpaceId(spaceId);
 				pages.setTitle(title);
 				pages.setGetVersions(false);
+				pages.setUseCache(false);
 				try {
 					List<ConfluencePages> pagesList = pages.getObjects(config);
 					if (pagesList.size() == 1 && pagesList.get(0).getResults().size() == 1) {
@@ -451,13 +453,13 @@ public class ConfluenceURLTransform {
 										switch (hr.getResultType()) {
 										case WARN:
 											changed = true;
-											CSV.printRecord(outputPrinter, spaceKey, title, 
+											CSV.printRecord(outputPrinter, spaceKey, title, page.getId(),
 													"Warning: " + hr.getErrorMessage(),
 													handlerName, urlString, urlString);
 											break;
 										case ERROR:
 											changed = false;
-											CSV.printRecord(outputPrinter, spaceKey, title, 
+											CSV.printRecord(outputPrinter, spaceKey, title, page.getId(),
 													"Error: " + hr.getErrorMessage(),
 													handlerName, urlString, urlString);
 											break;
@@ -468,7 +470,7 @@ public class ConfluenceURLTransform {
 													"To: [" + hr.getTag() + "]");
 											// Replace the whole match
 											matcher.appendReplacement(sb, Matcher.quoteReplacement(hr.getTag()));
-											CSV.printRecord(outputPrinter, spaceKey, title, 
+											CSV.printRecord(outputPrinter, spaceKey, title, page.getId(),
 													"Success", handlerName, tag, hr.getTag());
 											break;
 										case URI:
@@ -483,7 +485,7 @@ public class ConfluenceURLTransform {
 											// Replace URL only
 											matcher.appendReplacement(sb, "$" + GROUP_BEFORE_HREF
 													+ Matcher.quoteReplacement(resultUrl) + "$" + GROUP_AFTER_HREF);
-											CSV.printRecord(outputPrinter, spaceKey, title, 
+											CSV.printRecord(outputPrinter, spaceKey, title, page.getId(),
 													"Success", handlerName, urlString, resultUrl);
 											break;
 										}
@@ -492,11 +494,13 @@ public class ConfluenceURLTransform {
 								} // For all handlers
 								if (!accepted) {
 									Log.debug(LOGGER, "No handlers accept " + urlString);
-									CSV.printRecord(outputPrinter, spaceKey, title, "Ignored", "", urlString, urlString);
+									CSV.printRecord(outputPrinter, 
+											spaceKey, title, page.getId(), "Ignored", "", urlString, urlString);
 								}
 							} catch (Exception ex) {
 								Log.debug(LOGGER, "Ignoring invalid URI: " + urlString);
-								CSV.printRecord(outputPrinter, spaceKey, title, "Invalid URI: " + ex.getMessage(),
+								CSV.printRecord(outputPrinter, 
+										spaceKey, title, page.getId(), "Invalid URI: " + ex.getMessage(),
 										handlerName, urlString, "");
 							}
 						} // While matcher.find
@@ -528,10 +532,10 @@ public class ConfluenceURLTransform {
 											"/wiki/api/v2/pages/" + page.getId(), HttpMethod.PUT,
 											authHeader, query, newPage, "startAt", HttpStatus.SC_OK);
 									Log.info(LOGGER, "Page updated: " + page.getId());
-									CSV.printRecord(outputPrinter, spaceKey, title, 
+									CSV.printRecord(outputPrinter, spaceKey, title, page.getId(),
 											"Page Updated", "N/A", "N/A", "N/A");
 								} catch (Exception ex) {
-									CSV.printRecord(outputPrinter, spaceKey, title, 
+									CSV.printRecord(outputPrinter, spaceKey, title, page.getId(),
 											"Page update failed " + ex.getMessage(), "N/A", "N/A", "N/A");
 								}
 							}
@@ -539,13 +543,13 @@ public class ConfluenceURLTransform {
 					} else {
 						Log.error(LOGGER,
 								"Unable to locate page in space " + spaceKey + "(" + spaceId + ") title " + title);
-						CSV.printRecord(outputPrinter, spaceKey, title, 
+						CSV.printRecord(outputPrinter, spaceKey, title, "N/A",
 								"Unable to locate page in space", "N/A", "N/A", "N/A");
 					}
 				} catch (Exception ex) {
 					Log.error(LOGGER, 
 							"Unable to process page in space " + spaceKey + "(" + spaceId + ") title " + title);
-					CSV.printRecord(outputPrinter, spaceKey, title, 
+					CSV.printRecord(outputPrinter, spaceKey, title, "N/A",
 							"Unable to process page: " + ex.getMessage(), "N/A", "N/A", "N/A");
 				}
 			}	// for each post-migration page

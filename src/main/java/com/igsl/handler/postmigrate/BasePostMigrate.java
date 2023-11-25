@@ -101,7 +101,7 @@ public abstract class BasePostMigrate extends Handler {
 						if (BaseExport.NOTE_MATCHED.equals(result)) {
 							String key = t.get(setting.getKeyColumn());
 							String value = t.get(setting.getValueColumn());
-							Log.debug(LOGGER, "loadMappings() data: [" + key + "] = [" + value + "]");
+							// Log.debug(LOGGER, "loadMappings() data: [" + key + "] = [" + value + "]");
 							mapping.put(key, value);
 						}
 					}
@@ -111,6 +111,7 @@ public abstract class BasePostMigrate extends Handler {
 			mappings.put(setting.getBaseExport().getClass().getCanonicalName(), mapping);
 		}
 		Log.debug(LOGGER, "loadMappings() done for " + this.getClass().getCanonicalName());
+		mappingsLoaded = true;
 	}
 	
 	/**

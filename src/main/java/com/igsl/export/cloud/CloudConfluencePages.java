@@ -34,10 +34,15 @@ public class CloudConfluencePages extends BaseExport<ConfluencePages> {
 	private String spaceId;
 	private String title;
 	private boolean getVersions = false;
+	private boolean useCache = true;
+	
+	public void setUseCache(boolean useCache) {
+		this.useCache = useCache;
+	}
 	
 	@Override
 	protected boolean useDataCache() {
-		return true;
+		return useCache;
 	}
 	
 	@Override
