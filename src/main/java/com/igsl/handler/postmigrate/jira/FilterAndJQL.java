@@ -67,7 +67,7 @@ public class FilterAndJQL extends BasePostMigrate {
 							FilterAndJQL.class, 
 							Pattern.compile(
 									Pattern.quote(config.getUrlTransform().getJiraToBasePath()) + 
-									"/browse/([^/])+"),
+									"/browse/([^/]+)"),
 							CloudJiraFilters.class) {
 						@Override
 						public String getReplacement(Matcher m, Map<String, Map<String, String>> mappings) throws Exception {
