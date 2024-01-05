@@ -1,4 +1,7 @@
 {
+    "ignoreProjectKeys": [
+        "UT2"
+    ],
     "cloud": {
         "domain": "kcwong.atlassian.net",
         "userName": "kc.wong@igsl-group.com",
@@ -28,7 +31,7 @@
         "performUpdate": false
     },
     "urlTransform": {
-        "performUpdate": true,
+        "performUpdate": false,
         "defaultScheme": "https",
         "fromSchemeRegex": "https?",
         "toScheme": "https",
@@ -42,7 +45,7 @@
         "jiraToBasePath": "/jira"
     },
     "postMigrate": {
-         "performUpdate": true
+         "performUpdate": false
     },
     "handler": {
         "dc": [
@@ -67,6 +70,7 @@
             "com.igsl.export.dc.JiraUser"
         ],
         "urlTransform": [
+            "com.igsl.handler.jira.DoNotMigrate",
             "com.igsl.handler.confluence.Download",
             "com.igsl.handler.confluence.Page",
             "com.igsl.handler.confluence.PostMigrate",

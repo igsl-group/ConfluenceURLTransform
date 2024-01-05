@@ -2,8 +2,10 @@ package com.igsl.handler;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
@@ -17,7 +19,7 @@ public class URLPattern {
 	/**
 	 * URI must contain at least one of these to be accepted
 	 */
-	private List<Pattern> queryPatterns = new ArrayList<>();
+	private Map<String, Pattern> queryPatterns = new HashMap<>();
 
 	public URLPattern() {
 	}
@@ -39,13 +41,36 @@ public class URLPattern {
 	public URLPattern setQuery(String... parameterNames) {
 		this.queryPatterns.clear();
 		for (String s : parameterNames) {
-			this.queryPatterns.add(Pattern.compile(Pattern.quote(s) + "=[^&#]+"));
+			this.queryPatterns.put(s, Pattern.compile(Pattern.quote(s) + "=([^&#]+)"));
 		}
 		return this;
 	}
 
 	public boolean match(URI uri) {
 		return match(uri.getPath(), uri.getQuery());
+	}
+	
+	public Matcher getPathMatcher(URI uri) {
+		return this.pathPattern.matcher(uri.getPath());
+	}
+	
+	public Map<String, Matcher> getQueryMatchers(URI uri) {
+		if (this.queryPatterns.size() != 0) {
+			Map<String, Matcher> result = new HashMap<>();
+			String query = null;
+			try {
+				query = Handler.decode(uri.getQuery());
+			} catch (UnsupportedEncodingException e) {
+				Log.debug(LOGGER, "Failed to decode query: " + e.getMessage());
+			}
+			if (query != null) {
+				for (Map.Entry<String, Pattern> p : this.queryPatterns.entrySet()) {
+					result.put(p.getKey(), p.getValue().matcher(query));
+				}
+				return result;
+			}
+		}
+		return Collections.emptyMap();
 	}
 	
 	public boolean match(String path, String query) {
@@ -63,7 +88,7 @@ public class URLPattern {
 		}
 		boolean queryMatched = (queryPatterns.size() == 0);
 		if (queryPatterns.size() != 0 && query != null) {
-			for (Pattern p : queryPatterns) {
+			for (Pattern p : queryPatterns.values()) {
 				Log.debug(LOGGER, "Query [" + query + "] vs [" + p.toString() + "]");
 				if (p.matcher(query).find()) {
 					queryMatched = true;
@@ -79,7 +104,7 @@ public class URLPattern {
 		return pathPattern;
 	}
 
-	public List<Pattern> getQueryPatterns() {
+	public Map<String, Pattern> getQueryPatterns() {
 		return queryPatterns;
 	}
 }

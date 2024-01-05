@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class Config {
 	private static final String NEWLINE = System.getProperty("line.separator");	
 	private Handler handler;
+	private List<String> ignoreProjectKeys;
 	private Cloud cloud;
 	private Connections connections;
 	private URLTransform urlTransform;	
@@ -113,5 +114,11 @@ public class Config {
 	}
 	public void setPageTemplate(PageTemplate blueprint) {
 		this.pageTemplate = blueprint;
+	}
+	public List<String> getIgnoreProjectKeys() {
+		return ignoreProjectKeys;
+	}
+	public void setIgnoreProjectKeys(List<String> ignoreProjectKeys) {
+		this.ignoreProjectKeys = ignoreProjectKeys;
 	}
 }

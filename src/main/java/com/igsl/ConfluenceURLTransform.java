@@ -746,6 +746,7 @@ public class ConfluenceURLTransform {
 		}
 		try {
 			cmd = parser.parse(urlTransformOptions, args);
+			needJiraDB = true;
 			needConfluenceDB = true;
 		} catch (ParseException pex) {
 			// Ignore

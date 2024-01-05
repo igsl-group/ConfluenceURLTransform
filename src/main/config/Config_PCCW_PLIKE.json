@@ -1,4 +1,6 @@
 {
+    "ignoreProjectKeys": [
+    ],
     "cloud": {
         "domain": "consoleconnect-sandbox-824.atlassian.net",
         "userName": "kc.wong@igsl-group.com",
@@ -67,6 +69,7 @@
             "com.igsl.export.dc.JiraUser"
         ],
         "urlTransform": [
+            "com.igsl.handler.jira.DoNotMigrate",
             "com.igsl.handler.confluence.Download",
             "com.igsl.handler.confluence.Page",
             "com.igsl.handler.confluence.PostMigrate",
