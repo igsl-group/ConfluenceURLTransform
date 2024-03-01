@@ -32,9 +32,10 @@ public class JiraAttachment extends ObjectExport {
 	public static final String COL_AUTHORID = "AUTHOR_ID";
 	public static final String COL_AUTHORDISPLAYNAME = "AUTHOR_DISPLAYNAME";
 	public static final String COL_AUTHOREMAIL = "AUTHOR_EMAIL";
+	public static final String COL_PROJECTKEY = "PROJECTKEY";
 	public static final List<String> COL_LIST = Arrays.asList(
 			COL_ID, COL_ISSUEID, COL_ISSUEKEY, COL_MIMETYPE, COL_FILENAME, 
-			COL_AUTHOR, COL_AUTHORID, COL_AUTHORDISPLAYNAME, COL_AUTHOREMAIL);
+			COL_AUTHOR, COL_AUTHORID, COL_AUTHORDISPLAYNAME, COL_AUTHOREMAIL, COL_PROJECTKEY);
 	
 	private PreparedStatement ps;
 	private ResultSet rs;
@@ -63,10 +64,12 @@ public class JiraAttachment extends ObjectExport {
 			String authorId = rs.getString(7);
 			String authorDisplayName = rs.getString(8);
 			String authorEmail = rs.getString(9);
+			String projectKey = rs.getString(10);
 			return Arrays.asList(
 					id, issueId, issueKey, 
 					mimeType, fileName, 
-					author, authorId, authorDisplayName, authorEmail);
+					author, authorId, authorDisplayName, authorEmail,
+					projectKey);
 		}
 		return null;
 	}

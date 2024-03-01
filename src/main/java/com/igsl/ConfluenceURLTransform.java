@@ -396,7 +396,8 @@ public class ConfluenceURLTransform {
 		List<Handler> handlers = new ArrayList<>();
 		for (String handlerName : config.getHandler().getPostMigrate()) {
 			try {
-				Handler h = (Handler) Class.forName(handlerName).getDeclaredConstructor(Config.class)
+				Handler h = (Handler) Class.forName(handlerName)
+						.getDeclaredConstructor(Config.class)
 						.newInstance(config);
 				handlers.add(h);
 			} catch (Exception ex) {
