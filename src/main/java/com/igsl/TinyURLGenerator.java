@@ -9,6 +9,14 @@ import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 /**
  * Logic of Confluence tiny URL generation:
  * https://confluence.atlassian.com/confkb/how-to-programmatically-generate-the-tiny-link-of-a-confluence-page-956713432.html
@@ -95,8 +103,72 @@ public class TinyURLGenerator {
 		}
 	}
 	
-//	public static void main(String[] args) throws Exception {
-//		System.out.println(pack(164897067));
-//		System.out.println(unpack("KyHUCQ."));
-//	}
+	private static Options packOptions;
+	private static Options unpackOptions;
+	private static Option packOption;
+	private static Option unpackOption;
+	private static Option dataOption;
+	
+	static {
+		dataOption = Option.builder()
+				.argName("Data")
+				.desc("Data to be packed or unpacked")
+				.hasArg()
+				.option("d")
+				.longOpt("data")
+				.required()
+				.build();
+		packOption = Option.builder()
+				.argName("Pack")
+				.desc("Pack page ID into Jira's Tiny URL")
+				.option("p")
+				.longOpt("pack")
+				.required()
+				.build();
+		unpackOption = Option.builder()
+				.argName("Unpack")
+				.desc("Unpack Jira's Tiny URL into page ID")
+				.option("u")
+				.longOpt("unpack")
+				.required()
+				.build();
+		packOptions = new Options();
+		packOptions.addOption(packOption);
+		packOptions.addOption(dataOption);
+		unpackOptions = new Options();
+		unpackOptions.addOption(unpackOption);
+		unpackOptions.addOption(dataOption);
+	}
+	
+	private static void printHelp() {
+		HelpFormatter hf = new HelpFormatter();
+		hf.printHelp("Pack", packOptions);
+		hf.printHelp("Unpack", unpackOptions);
+	}
+	
+	public static void main(String[] args) throws Exception {
+		CommandLineParser parser = new DefaultParser();
+		try {
+			CommandLine cmd = parser.parse(packOptions, args);
+			String data = cmd.getOptionValue(dataOption);
+			try {
+				int pageId = Integer.parseInt(data);
+				System.out.println(pack(pageId));
+			} catch (NullPointerException nfex) {
+				System.out.println("Data must be an integer");
+			}
+			return;
+		} catch (ParseException pex) {
+			// Ignore
+		}
+		try {
+			CommandLine cmd = parser.parse(unpackOptions, args);
+			String data = cmd.getOptionValue(dataOption);
+			System.out.println(unpack(data));
+			return;
+		} catch (ParseException pex) {
+			// Ignore
+		}
+		printHelp();
+	}
 }
