@@ -103,72 +103,32 @@ public class TinyURLGenerator {
 		}
 	}
 	
-	private static Options packOptions;
-	private static Options unpackOptions;
-	private static Option packOption;
-	private static Option unpackOption;
-	private static Option dataOption;
-	
-	static {
-		dataOption = Option.builder()
-				.argName("Data")
-				.desc("Data to be packed or unpacked")
-				.hasArg()
-				.option("d")
-				.longOpt("data")
-				.required()
-				.build();
-		packOption = Option.builder()
-				.argName("Pack")
-				.desc("Pack page ID into Jira's Tiny URL")
-				.option("p")
-				.longOpt("pack")
-				.required()
-				.build();
-		unpackOption = Option.builder()
-				.argName("Unpack")
-				.desc("Unpack Jira's Tiny URL into page ID")
-				.option("u")
-				.longOpt("unpack")
-				.required()
-				.build();
-		packOptions = new Options();
-		packOptions.addOption(packOption);
-		packOptions.addOption(dataOption);
-		unpackOptions = new Options();
-		unpackOptions.addOption(unpackOption);
-		unpackOptions.addOption(dataOption);
-	}
-	
 	private static void printHelp() {
-		HelpFormatter hf = new HelpFormatter();
-		hf.printHelp("Pack", packOptions);
-		hf.printHelp("Unpack", unpackOptions);
+		System.out.println("Unpack Jira's Tiny URL: ");
+		System.out.println("java com.igsl.TinyURLGenerator -u [Last section of Tiny URL]");
+		System.out.println("Package page ID to Jira's Tiny URL: ");
+		System.out.println("java com.igsl.TinyURLGenerator -p [Page ID]");
+		System.out.println();
 	}
 	
 	public static void main(String[] args) throws Exception {
-		CommandLineParser parser = new DefaultParser();
-		try {
-			CommandLine cmd = parser.parse(packOptions, args);
-			String data = cmd.getOptionValue(dataOption);
-			try {
-				int pageId = Integer.parseInt(data);
-				System.out.println(pack(pageId));
-			} catch (NullPointerException nfex) {
-				System.out.println("Data must be an integer");
+		if (args.length == 2) {
+			if ("-u".equalsIgnoreCase(args[0])) {
+				String tinyURL = args[1];
+				int pageId = unpack(tinyURL);
+				System.out.println(pageId);
+				return;
+			} else if ("-p".equalsIgnoreCase(args[0])) {
+				try {
+					int pageId = Integer.parseInt(args[1]);
+					String tinyURL = pack(pageId);
+					System.out.println(tinyURL);
+				} catch (NumberFormatException nfex) {
+					System.out.println("Page ID must be an integer");
+				}
+				return;
 			}
-			return;
-		} catch (ParseException pex) {
-			// Ignore
-		}
-		try {
-			CommandLine cmd = parser.parse(unpackOptions, args);
-			String data = cmd.getOptionValue(dataOption);
-			System.out.println(unpack(data));
-			return;
-		} catch (ParseException pex) {
-			// Ignore
-		}
+		} 
 		printHelp();
 	}
 }
